@@ -48,11 +48,12 @@
     </Reference>
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="BuiltinPlugins\Echo.cs" />
     <Compile Include="Messages\WebReturn.cs" />
     <Compile Include="Plugin.cs" />
     <Compile Include="PluginLoader.cs" />
     <Compile Include="PluginManager.cs" />
-    <Compile Include="BuiltinPlugins\ExtensionList.cs" />
+    <Compile Include="BuiltinPlugins\PluginList.cs" />
     <Compile Include="BuiltinPlugins\Ping.cs" />
     <Compile Include="ITickable.cs" />
     <Compile Include="LogType.cs" />
