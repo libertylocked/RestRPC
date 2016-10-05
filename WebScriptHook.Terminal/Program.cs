@@ -12,7 +12,7 @@ namespace WebScriptHook.Terminal
 
         static void Main(string[] args)
         {
-            string componentName = "testbench"; //Guid.NewGuid().ToString();
+            string componentName = Guid.NewGuid().ToString();
             wshComponent = new WebScriptHookComponent(componentName, new RemoteSettings("ws", "localhost", "25555", "/componentws"));
             // Register custom plugins
             wshComponent.PluginManager.RegisterPlugin(new Echo());
