@@ -5,11 +5,11 @@ using System.Runtime.InteropServices;
 // General Information about an assembly is controlled through the following 
 // set of attributes. Change these attribute values to modify the information
 // associated with an assembly.
-[assembly: AssemblyTitle("WebScriptHook.Standalone")]
+[assembly: AssemblyTitle("WebScriptHook.Terminal")]
 [assembly: AssemblyDescription("")]
 [assembly: AssemblyConfiguration("")]
 [assembly: AssemblyCompany("")]
-[assembly: AssemblyProduct("WebScriptHook.Standalone")]
+[assembly: AssemblyProduct("WebScriptHook.Terminal")]
 [assembly: AssemblyCopyright("Copyright ©  2016")]
 [assembly: AssemblyTrademark("")]
 [assembly: AssemblyCulture("")]
@@ -20,7 +20,7 @@ using System.Runtime.InteropServices;
 [assembly: ComVisible(false)]
 
 // The following GUID is for the ID of the typelib if this project is exposed to COM
-[assembly: Guid("11324e3a-4010-4511-8d19-e9c54981a49b")]
+[assembly: Guid("58687170-867c-4ebc-806c-ffb19cf09a6c")]
 
 // Version information for an assembly consists of the following four values:
 //
