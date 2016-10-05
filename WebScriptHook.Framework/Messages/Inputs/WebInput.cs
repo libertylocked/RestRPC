@@ -11,7 +11,7 @@ namespace WebScriptHook.Framework.Messages.Inputs
         /// Gets the header of the request. 
         /// Header is currently unused
         /// </summary>
-        public string Header { get; set; }
+        public byte Header { get; set; }
 
         /// <summary>
         /// Gets the command of the request. 
@@ -32,7 +32,7 @@ namespace WebScriptHook.Framework.Messages.Inputs
         public string UID { get; private set; }
 
         [JsonConstructor]
-        public WebInput(string Header, string Cmd, object[] Args, string UID)
+        public WebInput(byte Header, string Cmd, object[] Args, string UID)
         {
             this.Header = Header;
             this.Cmd = Cmd;

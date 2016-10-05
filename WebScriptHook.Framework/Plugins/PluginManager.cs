@@ -87,6 +87,7 @@ namespace WebScriptHook.Framework.Plugins
             WebOutput cacheRequestMessage = new SetCacheRequest(pluginId, key, value);
 
             // TODO: This message needs to be added to the output message queue
+            throw new NotImplementedException();
         }
 
         public bool RegisterPlugin(Plugin plugin)
