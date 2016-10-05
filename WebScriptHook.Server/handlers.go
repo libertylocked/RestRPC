@@ -19,11 +19,25 @@ type WebInput struct {
 	UID    uuid.UUID     // UID attached to this request. Used to identify the response to this request when the response is sent over socket
 }
 
+type componentRecord struct {
+	Name   string
+	Remote string
+}
+
 var inChMap = make(map[string]chan WebInput)        // Input channel map, used to send inputs from web to components. Key is component ID
 var retChMap = make(map[uuid.UUID]chan interface{}) // Return data map, used for WSH component return values
 
 func handleStatusGet(w http.ResponseWriter, r *http.Request) {
-
+	// Lists all the components connected and their remote endpoints
+	componentList := []componentRecord{}
+	for k, v := range componentNameMap {
+		componentList = append(componentList, componentRecord{v, k.RemoteAddr})
+	}
+	jsonOutput, err := json.Marshal(componentList)
+	if err != nil {
+		http.Error(w, http.StatusText(500), 500)
+	}
+	w.Write(jsonOutput)
 }
 
 func handleInputPost(w http.ResponseWriter, r *http.Request) {
@@ -73,7 +87,7 @@ func handleInputPost(w http.ResponseWriter, r *http.Request) {
 		}
 	default:
 		// Fails to POST the input because component's chan is full, or its channel does not exist
-		log.Println("POST: Input channel unavailable. Discarding value")
+		log.Println("POST: Input channel unavailable. Discarding:", input)
 		http.Error(w, http.StatusText(502), 502)
 	}
 }
