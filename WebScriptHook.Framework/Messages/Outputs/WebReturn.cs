@@ -7,7 +7,7 @@ namespace WebScriptHook.Framework.Messages.Outputs
     /// </summary>
     class WebReturn : WebOutput
     {
-        const byte HEADER_RETURN = (byte)'r';
+        const char HEADER_RETURN = 'r';
 
         [JsonConstructor]
         public WebReturn(object Data, string UID)

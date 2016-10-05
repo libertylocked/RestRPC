@@ -9,7 +9,7 @@ namespace WebScriptHook.Framework.Messages.Outputs
     /// </summary>
     class WebPulse : WebOutput
     {
-        const byte HEADER_PULSE = (byte)'p';
+        const char HEADER_PULSE = 'p';
 
         [JsonConstructor]
         public WebPulse(object Data)

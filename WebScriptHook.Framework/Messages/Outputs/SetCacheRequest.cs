@@ -7,7 +7,7 @@
     /// </summary>
     class SetCacheRequest : WebOutput
     {
-        const byte HEADER_CACHE = (byte)'c';
+        const char HEADER_CACHE = 'c';
 
         public SetCacheRequest(string PluginID, string Key, object Data)
             : base(HEADER_CACHE, new object[] { PluginID, Key, Data }, "")
