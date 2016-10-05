@@ -1,5 +1,6 @@
 ﻿using System;
 using System.IO;
+using System.Diagnostics;
 
 namespace WebScriptHook.Framework
 {
@@ -21,7 +22,11 @@ namespace WebScriptHook.Framework
         {
             if ((LogLevel & logType) != LogType.None)
             {
-                File.AppendAllText(FileName, "[" + DateTime.Now + "] [" + logType.ToString() + "]: " + message + Environment.NewLine);
+                string formatedMessage = "[" + DateTime.Now + "] [" + logType.ToString() + "]: " + message;
+                File.AppendAllText(FileName, formatedMessage + Environment.NewLine);
+#if DEBUG
+                Debug.WriteLine(formatedMessage);
+#endif
             }
         }
 
