@@ -48,22 +48,6 @@ function sendInputClick() {
     args.push(aData);
   }
   // Finally compose a request and send to server
-  // $.ajax({
-  //   url: '/input',
-  //   type: 'POST',
-  //   dataType: 'json',
-  //   data: JSON.stringify({ "Target": "1234", "Cmd": "print", "Args" : "hello" }),
-  //   cache: false,
-  //   timeout: 2000,
-  //   success: function(data) {
-  //     $("#sendResultTitle").text("Sent");
-  //     $("#sendResultBody").text(data);
-  //   },
-  //   error: function(jqXHR, textStatus, errorThrown) {
-  //     $("#sendResultTitle").text("Error");
-  //     $("#sendResultBody").text(errorThrown.stack);
-  //   },
-  // });
   sendInput(targetComponent, cmd, args, function(data) {
     $("#sendResultTitle").text("Sent");
     $("#sendResultBody").text(data);
