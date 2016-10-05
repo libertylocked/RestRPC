@@ -6,7 +6,7 @@ namespace WebScriptHook.Framework.BuiltinPlugins
     /// A built-in plugin of WebScriptHook
     /// Handles "pluginlist" request and returns the list of plugins loaded
     /// </summary>
-    class PluginList : Plugin, IRespond
+    public class PluginList : Plugin, IRespond
     {
         protected internal override string PluginIDImpl
         {

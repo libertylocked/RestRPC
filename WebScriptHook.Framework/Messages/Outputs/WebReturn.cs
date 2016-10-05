@@ -11,7 +11,7 @@ namespace WebScriptHook.Framework.Messages.Outputs
 
         [JsonConstructor]
         public WebReturn(object Data, string UID)
-            : base(HEADER_RETURN, Data, UID)
+            : base(HEADER_RETURN, new object[] { Data }, UID)
         { }
     }
 }

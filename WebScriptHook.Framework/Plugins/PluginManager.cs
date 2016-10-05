@@ -13,6 +13,11 @@ namespace WebScriptHook.Framework.Plugins
         HashSet<Plugin> tickablePlugins = new HashSet<Plugin>();
         List<Plugin> offendingPlugins = new List<Plugin>();
 
+        public string[] PluginIDs
+        {
+            get { return pluginMap.Keys.ToArray(); }
+        }
+
         internal static PluginManager Instance
         {
             get
@@ -20,11 +25,6 @@ namespace WebScriptHook.Framework.Plugins
                 if (instance == null) CreateInstance();
                 return instance;
             }
-        }
-
-        internal string[] PluginIDs
-        {
-            get { return pluginMap.Keys.ToArray(); }
         }
 
         /// <summary>

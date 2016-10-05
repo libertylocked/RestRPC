@@ -7,12 +7,15 @@ namespace WebScriptHook.Framework.Messages.Outputs
     /// </summary>
     abstract class WebOutput
     {
+        [JsonProperty]
         public char Header { get; set; }
-        public object Data { get; set; }
+        [JsonProperty]
+        public object[] Data { get; set; }
+        [JsonProperty]
         public string UID { get; private set; }
 
         [JsonConstructor]
-        public WebOutput(char Header, object Data, string UID)
+        public WebOutput(char Header, object[] Data, string UID)
         {
             this.Header = Header;
             this.Data = Data;

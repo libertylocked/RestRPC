@@ -49,6 +49,7 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="BuiltinPlugins\Echo.cs" />
+    <Compile Include="Messages\Outputs\ChannelRequest.cs" />
     <Compile Include="Messages\Outputs\SetCacheRequest.cs" />
     <Compile Include="Messages\Outputs\WebReturn.cs" />
     <Compile Include="Plugins\Plugin.cs" />
@@ -65,7 +66,7 @@
     <Compile Include="RemoteSettings.cs" />
     <Compile Include="Serialization\WritablePropertiesOnlyResolver.cs" />
     <Compile Include="Messages\Inputs\WebInput.cs" />
-    <Compile Include="Messages\Outputs\WebPulse.cs" />
+    <Compile Include="Messages\Outputs\Pulse.cs" />
     <Compile Include="WebScriptHookComponent.cs" />
   </ItemGroup>
   <ItemGroup>
