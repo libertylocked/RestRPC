@@ -4,7 +4,7 @@ using System.IO;
 using System.Linq;
 using System.Reflection;
 
-namespace WebScriptHook.Framework
+namespace WebScriptHook.Framework.Plugins
 {
     class PluginLoader
     {

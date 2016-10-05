@@ -1,10 +1,12 @@
-﻿namespace WebScriptHook.Framework.BuiltinPlugins
+﻿using WebScriptHook.Framework.Plugins;
+
+namespace WebScriptHook.Framework.BuiltinPlugins
 {
     /// <summary>
     /// A built-in plugin of WebScriptHook
     /// Handles "pluginlist" request and returns the list of plugins loaded
     /// </summary>
-    class PluginList : Plugin
+    class PluginList : Plugin, IRespond
     {
         protected internal override string PluginIDImpl
         {
@@ -19,7 +21,7 @@
         /// </summary>
         /// <param name="args">Not used<param>
         /// <returns>An array of ID strings of plugins loaded</returns>
-        public override object Respond(object[] args)
+        public object Respond(object[] args)
         {
             return PluginManager.Instance.PluginIDs;
         }

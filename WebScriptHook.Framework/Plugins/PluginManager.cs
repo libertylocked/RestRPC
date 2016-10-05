@@ -1,9 +1,9 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
-using WebScriptHook.Framework.Messages;
+using WebScriptHook.Framework.Messages.Outputs;
 
-namespace WebScriptHook.Framework
+namespace WebScriptHook.Framework.Plugins
 {
     public class PluginManager
     {
@@ -50,7 +50,7 @@ namespace WebScriptHook.Framework
             {
                 try
                 {
-                    (p as ITickable).Tick();
+                    (p as IUpdate).Update();
                 }
                 catch (Exception ex)
                 {
@@ -70,9 +70,10 @@ namespace WebScriptHook.Framework
         internal object Dispatch(string pluginId, object[] args)
         {
             Plugin callee;
-            if (pluginMap.TryGetValue(pluginId, out callee))
+            // Can only dispatch if the pluginID is found and the plugin implements IRespond
+            if (pluginMap.TryGetValue(pluginId, out callee) && (callee is IRespond))
             {
-                return callee.Respond(args);
+                return (callee as IRespond).Respond(args);
             }
             else
             {
@@ -81,25 +82,34 @@ namespace WebScriptHook.Framework
             }
         }
 
-        public void RegisterPlugin(Plugin plugin)
+        internal void SetCache(string pluginId, string key, object value)
+        {
+            WebOutput cacheRequestMessage = new SetCacheRequest(pluginId, key, value);
+
+            // TODO: This message needs to be added to the output message queue
+        }
+
+        public bool RegisterPlugin(Plugin plugin)
         {
             string key = plugin.PluginID;
             
             if (pluginMap.ContainsKey(key))
             {
                 Logger.Log("Plugin key collision! Plugin will not be loaded: " + key, LogType.Error);
-                return;
+                return false;
             }
 
             pluginMap.Add(key, plugin);
             Logger.Log("Plugin registered: " + key, LogType.Info);
 
             // If tickable, add to tickable list
-            if (plugin is ITickable)
+            if (plugin is IUpdate)
             {
                 tickablePlugins.Add(plugin);
                 Logger.Log("Found tickable plugin: " + plugin.GetType(), LogType.Info);
             }
+
+            return true;
         }
 
         public void UnregisterPlugin(Plugin plugin)

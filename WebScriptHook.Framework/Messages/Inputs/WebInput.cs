@@ -1,6 +1,6 @@
 ﻿using Newtonsoft.Json;
 
-namespace WebScriptHook.Framework.Messages
+namespace WebScriptHook.Framework.Messages.Inputs
 {
     /// <summary>
     /// This is the format of messages client is receiving from the remote server
@@ -38,11 +38,6 @@ namespace WebScriptHook.Framework.Messages
             this.Cmd = Cmd;
             this.Args = Args;
             this.UID = UID;
-        }
-
-        public object Execute()
-        {
-            return PluginManager.Instance.Dispatch(Cmd, Args);
         }
     }
 }

@@ -1,4 +1,4 @@
-﻿namespace WebScriptHook.Framework
+﻿namespace WebScriptHook.Framework.Plugins
 {
     /// <summary>
     /// A plugin extends the request types WebScriptHook can handle
@@ -24,21 +24,25 @@
         }
 
         /// <summary>
-        /// Answers a call to this plugin
-        /// </summary>
-        /// <param name="args">Arguments passed with the call</param>
-        /// <returns>Object to be returned to caller</returns>
-        public abstract object Respond(object[] args);
-
-        /// <summary>
-        /// Calls another plugin loaded in Plugin Manager
+        /// Dispatch another plugin loaded in Plugin Manager
         /// </summary>
         /// <param name="targetID">Callee's plugin ID</param>
         /// <param name="args">Arguments passed with the call</param>
         /// <returns>Object returned by the callee</returns>
-        protected object CallPlugin(string targetID, object[] args)
+        protected object Dispatch(string targetID, object[] args)
         {
             return PluginManager.Instance.Dispatch(targetID, args);
+        }
+        
+
+        /// <summary>
+        /// Requests the key-value pair be cached in this plugin's cache map, on the server
+        /// </summary>
+        /// <param name="key">Key of the entry in the cache map</param>
+        /// <param name="value">Value of the entry in the cache map</param>
+        protected void SetCache(string key, object value)
+        {
+            PluginManager.Instance.SetCache(PluginID, key, value);
         }
     }
 }

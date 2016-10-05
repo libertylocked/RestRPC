@@ -1,4 +1,4 @@
-﻿namespace WebScriptHook.Framework.Messages
+﻿namespace WebScriptHook.Framework.Messages.Outputs
 {
     /// <summary>
     /// A null object. 

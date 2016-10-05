@@ -1,6 +1,6 @@
 ﻿using Newtonsoft.Json;
 
-namespace WebScriptHook.Framework.Messages
+namespace WebScriptHook.Framework.Messages.Outputs
 {
     /// <summary>
     /// This is the format for messages client is sending to the server

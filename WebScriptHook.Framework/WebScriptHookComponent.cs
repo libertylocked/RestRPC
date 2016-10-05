@@ -2,7 +2,9 @@
 using System;
 using System.Collections.Concurrent;
 using System.Threading;
-using WebScriptHook.Framework.Messages;
+using WebScriptHook.Framework.Messages.Inputs;
+using WebScriptHook.Framework.Messages.Outputs;
+using WebScriptHook.Framework.Plugins;
 using WebScriptHook.Framework.Serialization;
 using WebSocketSharp;
 
@@ -16,14 +18,13 @@ namespace WebScriptHook.Framework
 
         ConcurrentQueue<WebInput> inputQueue = new ConcurrentQueue<WebInput>();
         ConcurrentQueue<WebOutput> outputQueue = new ConcurrentQueue<WebOutput>();
-        WebPulse pulseMessage;
 
         JsonSerializerSettings outSerializerSettings = new JsonSerializerSettings { ContractResolver = new WritablePropertiesOnlyResolver() };
 
         /// <summary>
         /// Gets the name of this WebScriptHook component
         /// </summary>
-        public string ClientName
+        public string Name
         {
             get;
             private set;
@@ -48,28 +49,27 @@ namespace WebScriptHook.Framework
             get;
             private set;
         } = false;
-        
+
         /// <summary>
         /// Constructor
         /// </summary>
-        /// <param name="clientName"></param>
-        /// <param name="remoteSettings"></param>
-        public WebScriptHookComponent(string clientName, RemoteSettings remoteSettings)
-        : this(clientName, remoteSettings, null, LogType.None)
+        /// <param name="componentName">The name of this WebScriptHook component</param>
+        /// <param name="remoteSettings">Remote server settings</param>
+        public WebScriptHookComponent(string componentName, RemoteSettings remoteSettings)
+        : this(componentName, remoteSettings, null, LogType.None)
         { }
 
         /// <summary>
         /// Constructor
         /// </summary>
-        /// <param name="clientName"></param>
-        /// <param name="remoteSettings"></param>
-        /// <param name="logFile"></param>
-        /// <param name="logLevel"></param>
-        public WebScriptHookComponent(string clientName, RemoteSettings remoteSettings, string logFile, LogType logLevel)
+        /// <param name="componentName">The name of this WebScriptHook component</param>
+        /// <param name="remoteSettings">Remote server settings</param>
+        /// <param name="logFile">Log filename</param>
+        /// <param name="logLevel">Level of logging</param>
+        public WebScriptHookComponent(string componentName, RemoteSettings remoteSettings, string logFile, LogType logLevel)
         {
-            this.ClientName = clientName;
+            this.Name = componentName;
             this.RemoteSettings = remoteSettings;
-            this.pulseMessage = new WebPulse(clientName);
 
             Logger.FileName = logFile;
             Logger.LogLevel = logLevel;
@@ -123,17 +123,23 @@ namespace WebScriptHook.Framework
             // Tick plugin manager
             PluginManager.Instance.Update();
 
-            // Check for inputs
+            // Process input messages
+            ProcessInputMessages();
+        }
+
+        private void ProcessInputMessages()
+        {
             WebInput input;
             while (inputQueue.TryDequeue(out input))
             {
                 try
                 {
+                    // Process this message
                     Logger.Log("Executing " + input.Cmd, LogType.Debug);
-                    object retVal = input.Execute();
+                    object retVal = PluginManager.Instance.Dispatch(input.Cmd, input.Args);
+                    // Only return real values. Do not return NoOutput messages
                     if (retVal.GetType() != typeof(NoOutput))
                     {
-                        // Only return real values. Do not return NoOutput messages
                         outputQueue.Enqueue(new WebReturn(retVal, input.UID));
                     }
                 }
@@ -156,8 +162,6 @@ namespace WebScriptHook.Framework
                     // Check if connection is alive. If not, attempt to connect to server
                     // WS doesn't throw exceptions when connection fails or unconnected
                     if (!ws.IsAlive) ws.Connect();
-                    // Send pulse message
-                    ws.Send(JsonConvert.SerializeObject(pulseMessage));
                     // Send output data
                     WebOutput output;
                     while (outputQueue.TryDequeue(out output))

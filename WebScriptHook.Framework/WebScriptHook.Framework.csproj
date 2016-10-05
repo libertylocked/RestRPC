@@ -49,22 +49,23 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="BuiltinPlugins\Echo.cs" />
-    <Compile Include="Messages\WebReturn.cs" />
-    <Compile Include="Plugin.cs" />
-    <Compile Include="PluginLoader.cs" />
-    <Compile Include="PluginManager.cs" />
+    <Compile Include="Messages\Outputs\SetCacheRequest.cs" />
+    <Compile Include="Messages\Outputs\WebReturn.cs" />
+    <Compile Include="Plugins\Plugin.cs" />
+    <Compile Include="Plugins\PluginLoader.cs" />
+    <Compile Include="Plugins\PluginManager.cs" />
     <Compile Include="BuiltinPlugins\PluginList.cs" />
-    <Compile Include="BuiltinPlugins\Ping.cs" />
-    <Compile Include="ITickable.cs" />
+    <Compile Include="Plugins\IUpdate.cs" />
     <Compile Include="LogType.cs" />
     <Compile Include="Logger.cs" />
-    <Compile Include="Messages\NoOutput.cs" />
-    <Compile Include="Messages\WebOutput.cs" />
+    <Compile Include="Messages\Outputs\NoOutput.cs" />
+    <Compile Include="Messages\Outputs\WebOutput.cs" />
+    <Compile Include="Plugins\IRespond.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="RemoteSettings.cs" />
     <Compile Include="Serialization\WritablePropertiesOnlyResolver.cs" />
-    <Compile Include="Messages\WebInput.cs" />
-    <Compile Include="Messages\WebPulse.cs" />
+    <Compile Include="Messages\Inputs\WebInput.cs" />
+    <Compile Include="Messages\Outputs\WebPulse.cs" />
     <Compile Include="WebScriptHookComponent.cs" />
   </ItemGroup>
   <ItemGroup>
