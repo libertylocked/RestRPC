@@ -6,7 +6,7 @@ using System.Reflection;
 
 namespace WebScriptHook.Framework.Plugins
 {
-    class PluginLoader
+    public class PluginLoader
     {
         /// <summary>
         /// Get Plugin subclasses from an assembly and instantiate them
@@ -45,12 +45,12 @@ namespace WebScriptHook.Framework.Plugins
         /// </summary>
         /// <param name="dirName">The directory to search for plugins in</param>
         /// <returns>The list of plugins found in the directory, all instantiated</returns>
-        public static List<Plugin> LoadAllPluginsFromDir(string dirName)
+        public static List<Plugin> LoadAllPluginsFromDir(string dirName, string pattern)
         {
             var plugins = new List<Plugin>();
             try
             {
-                var fileNames = Directory.GetFiles(dirName, "*.dll", SearchOption.AllDirectories);
+                var fileNames = Directory.GetFiles(dirName, pattern, SearchOption.AllDirectories);
                 foreach (var fileName in fileNames)
                 {
                     plugins.AddRange(LoadPluginsFromAssembly(fileName));
