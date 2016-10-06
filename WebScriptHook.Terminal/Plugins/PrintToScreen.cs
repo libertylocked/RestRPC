@@ -14,8 +14,8 @@ namespace WebScriptHook.Terminal.Plugins
             }
             Console.Write(Environment.NewLine);
 
-            // This plugin does not return anything to the requester
-            return new NoOutput();
+            // Return true so that our client will be notified that the operation succeeded
+            return true;
         }
     }
 }
