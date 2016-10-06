@@ -149,7 +149,7 @@ namespace WebScriptHook.Framework
                     Logger.Log("Executing " + input.Cmd, LogType.Debug);
                     object retVal = PluginManager.Instance.Dispatch(input.Cmd, input.Args);
                     // Only return real values. Do not return NoOutput messages
-                    if (retVal.GetType() != typeof(NoOutput))
+                    if (retVal == null || retVal.GetType() != typeof(NoOutput))
                     {
                         outputQueue.Enqueue(new WebReturn(retVal, input.UID));
                     }
