@@ -53,6 +53,11 @@ namespace WebScriptHook.Framework
             private set;
         } = false;
 
+        public bool IsConnected
+        {
+            get { return ws != null && ws.IsAlive; }
+        }
+
         public PluginManager PluginManager
         {
             get { return PluginManager.Instance; }
@@ -100,9 +105,11 @@ namespace WebScriptHook.Framework
         {
             if (!IsRunning)
             {
-                networkThread = new Thread(Worker_OnTick);
+                networkThread = new Thread(NetworkWorker_ThreadProc);
                 networkThread.IsBackground = true;
                 networkThread.Start();
+
+                IsRunning = true;
             }
         }
 
@@ -120,6 +127,8 @@ namespace WebScriptHook.Framework
                 // Clear queues
                 inputQueue = new ConcurrentQueue<WebInput>();
                 outputQueue = new ConcurrentQueue<WebOutput>();
+
+                IsRunning = false;
             }
         }
 
@@ -161,7 +170,7 @@ namespace WebScriptHook.Framework
             }
         }
 
-        private void Worker_OnTick()
+        private void NetworkWorker_ThreadProc()
         {
             while (true)
             {
