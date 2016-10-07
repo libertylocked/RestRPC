@@ -123,7 +123,7 @@ namespace WebScriptHook.Framework
             {
                 // Abort network thread and close ws connection
                 networkThread.Abort();
-                ws.Close();
+                ws.Close(CloseStatusCode.Normal);
                 // Clear queues
                 inputQueue = new ConcurrentQueue<WebInput>();
                 outputQueue = new ConcurrentQueue<WebOutput>();
