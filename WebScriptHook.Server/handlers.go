@@ -101,11 +101,13 @@ func handleIndex(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Pragma", "no-cache")                                   // HTTP 1.0.
 	w.Header().Set("Expires", "0")                                         // Proxies
 	files, _ := ioutil.ReadDir("./apps/")
-	tmplData := map[string]time.Time{}
+	tmplData := map[string]interface{}{}
+	folders := []string{}
 	for _, f := range files {
 		if f.IsDir() {
-			tmplData[f.Name()] = f.ModTime()
+			folders = append(folders, f.Name())
 		}
 	}
+	tmplData["folders"] = folders
 	renderTemplate(w, "index.html", tmplData)
 }
