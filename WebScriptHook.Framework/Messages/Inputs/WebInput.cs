@@ -44,7 +44,7 @@ namespace WebScriptHook.Framework.Messages.Inputs
         public override string ToString()
         {
             return "Header: " + Header + ", Cmd: " + Cmd + ", Args: [" + 
-                string.Join(",", Args) +
+                ((Args == null) ? "" : string.Join(",", Args)) +
                 "], UID: " + UID;
         }
     }
