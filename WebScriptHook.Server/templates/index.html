@@ -26,17 +26,7 @@
         for (var i = 0; i < data.length; i++) {
           var name = data[i]["Name"];
           var remote = data[i]["Remote"];
-          $("#servicesList").append("<li class='list-group-item col-md-6'><a href='#' id='svc_"+name+"'>" + name + "</a> (" + remote + ")" + "</li>");
-          $("#svc_"+name).popover({
-            "html": true,
-            "placement": "bottom",
-            "title": "Plugins on " + name,
-            "content": function() {
-              var div_id =  "tmp-id-" + $.now();
-              return details_in_popup(name, div_id);
-            },
-            "trigger": "click"
-          });
+          $("#servicesList").append("<li class='list-group-item col-md-6'><a href='#' id='svc_"+name+"' onclick='serviceOnClick(\""+name+"\")'>" + name + "</a> (" + remote + ")" + "</li>");
         }
       },
       error: function() {
@@ -47,14 +37,25 @@
       $("#servicesTitle").append(" </span><a href='#' onclick='checkServicesList()'><i class='fa fa-refresh'></i></a>");
     });
   }
-
-  function details_in_popup(serviceName, div_id) {
-    sendInput(serviceName, "pluginlist", null, function(data){
-      $("#"+div_id).html(JSON.parse(data).join("<br>"));
+  
+  function serviceOnClick(name) {
+    sendInput(name, "pluginlist", null, function(data){
+      $("#svc_"+name).popover({
+        "html": true,
+        "placement": "bottom",
+        "title": "Plugins on " + name,
+        "content": JSON.parse(data).join("<br>"),
+        "trigger": "hover"
+        }).popover('show');
     }, function(jqXHR, textStatus, errorThrown) {
-      $("#"+div_id).html("Error retrieving plugin list!")
+      $("#svc_"+name).popover({
+        "html": true,
+        "placement": "bottom",
+        "title": "Plugins on " + name,
+        "content": "Error retrieving plugin list!",
+        "trigger": "hover"
+        }).popover('show');
     });
-    return "<div id='"+div_id+"'>Getting service plugins...</div>";
   }
   </script>
   <style>
