@@ -7,5 +7,6 @@
         Warning = 2,
         Error = 4,
         Debug = 8,
+        All = 15,
     }
 }

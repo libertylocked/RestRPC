@@ -2,7 +2,7 @@
 using WebScriptHook.Framework.Plugins;
 using WebScriptHook.Framework.Messages.Outputs;
 
-namespace WebScriptHook.Terminal.Plugins
+namespace WebScriptHook.Service.Plugins
 {
     class PrintToScreen : Plugin, IRespond
     {

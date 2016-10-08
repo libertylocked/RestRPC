@@ -1,12 +1,13 @@
-﻿using System;
+﻿using CommandLine;
+using System;
 using System.IO;
 using System.Threading;
 using WebScriptHook.Framework;
 using WebScriptHook.Framework.BuiltinPlugins;
 using WebScriptHook.Framework.Plugins;
-using WebScriptHook.Terminal.Plugins;
+using WebScriptHook.Service.Plugins;
 
-namespace WebScriptHook.Terminal
+namespace WebScriptHook.Service
 {
     class Program
     {
@@ -15,7 +16,20 @@ namespace WebScriptHook.Terminal
         static void Main(string[] args)
         {
             string componentName = Guid.NewGuid().ToString();
-            wshComponent = new WebScriptHookComponent(componentName, new RemoteSettings("ws", "localhost", "25555", "/componentws"));
+            Uri remoteUri;
+
+            var options = new CommandLineOptions();
+            if (Parser.Default.ParseArguments(args, options))
+            {
+                if (!string.IsNullOrWhiteSpace(options.Name)) componentName = options.Name;
+                remoteUri = new Uri(options.ServerUriString);
+            }
+            else
+            {
+                return;
+            }
+
+            wshComponent = new WebScriptHookComponent(componentName, remoteUri, Console.Out, LogType.All);
             // Register custom plugins
             wshComponent.PluginManager.RegisterPlugin(new Echo());
             wshComponent.PluginManager.RegisterPlugin(new PluginList());
@@ -33,19 +47,11 @@ namespace WebScriptHook.Terminal
             // Start WSH component
             wshComponent.Start();
 
-            // Print all registered plugins
-            Console.WriteLine("Registered plugins on \"" + wshComponent.Name + "\":");
-            var pluginIDs = wshComponent.PluginManager.PluginIDs;
-            foreach (var pluginID in pluginIDs)
-            {
-                Console.WriteLine(pluginID);
-            }
-
             // TODO: Use a timer instead of Sleep
             while (true)
             {
                 wshComponent.Update();
-                Thread.Sleep(20);
+                Thread.Sleep(100);
             }
         }
     }

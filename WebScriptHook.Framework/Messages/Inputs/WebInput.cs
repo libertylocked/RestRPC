@@ -1,4 +1,5 @@
 ﻿using Newtonsoft.Json;
+using System.Text;
 
 namespace WebScriptHook.Framework.Messages.Inputs
 {
@@ -38,6 +39,13 @@ namespace WebScriptHook.Framework.Messages.Inputs
             this.Cmd = Cmd;
             this.Args = Args;
             this.UID = UID;
+        }
+
+        public override string ToString()
+        {
+            return "Header: " + Header + ", Cmd: " + Cmd + ", Args: [" + 
+                string.Join(",", Args) +
+                "], UID: " + UID;
         }
     }
 }

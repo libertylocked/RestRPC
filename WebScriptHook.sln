@@ -5,7 +5,7 @@ VisualStudioVersion = 14.0.25420.1
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "WebScriptHook.Framework", "WebScriptHook.Framework\WebScriptHook.Framework.csproj", "{9132701D-CE79-4303-B7D4-11632FAF3AD6}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "WebScriptHook.Terminal", "WebScriptHook.Terminal\WebScriptHook.Terminal.csproj", "{58687170-867C-4EBC-806C-FFB19CF09A6C}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "WebScriptHook.Service", "WebScriptHook.Service\WebScriptHook.Service.csproj", "{58687170-867C-4EBC-806C-FFB19CF09A6C}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

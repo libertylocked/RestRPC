@@ -1,7 +1,7 @@
 ﻿using Newtonsoft.Json;
 using System;
 using System.Collections.Concurrent;
-using System.Text;
+using System.IO;
 using System.Threading;
 using WebScriptHook.Framework.Messages.Inputs;
 using WebScriptHook.Framework.Messages.Outputs;
@@ -41,7 +41,7 @@ namespace WebScriptHook.Framework
         /// <summary>
         /// Gets information on the remote this component is connecting to
         /// </summary>
-        public RemoteSettings RemoteSettings
+        public Uri RemoteUri
         {
             get;
             private set;
@@ -68,8 +68,8 @@ namespace WebScriptHook.Framework
         /// </summary>
         /// <param name="componentName">The name of this WebScriptHook component</param>
         /// <param name="remoteSettings">Remote server settings</param>
-        public WebScriptHookComponent(string componentName, RemoteSettings remoteSettings)
-        : this(componentName, remoteSettings, null, LogType.None)
+        public WebScriptHookComponent(string componentName, Uri remoteUri)
+        : this(componentName, remoteUri, null, LogType.None)
         { }
 
         /// <summary>
@@ -77,18 +77,18 @@ namespace WebScriptHook.Framework
         /// </summary>
         /// <param name="componentName">The name of this WebScriptHook component</param>
         /// <param name="remoteSettings">Remote server settings</param>
-        /// <param name="logFile">Log filename</param>
+        /// <param name="logWriter">Log writer</param>
         /// <param name="logLevel">Level of logging</param>
-        public WebScriptHookComponent(string componentName, RemoteSettings remoteSettings, string logFile, LogType logLevel)
+        public WebScriptHookComponent(string componentName, Uri remoteUri, TextWriter logWriter, LogType logLevel)
         {
             this.Name = componentName;
-            this.RemoteSettings = remoteSettings;
+            this.RemoteUri = remoteUri;
 
-            Logger.FileName = logFile;
+            Logger.Writer = logWriter;
             Logger.LogLevel = logLevel;
 
             // Set up network worker, which exchanges data between plugin and server
-            ws = new WebSocket(remoteSettings.GetWebSocketURL());
+            ws = new WebSocket(remoteUri.ToString());
             ws.OnMessage += WS_OnMessage;
             ws.OnOpen += WS_OnOpen;
             // TODO: Add WebSocket authentication
@@ -110,6 +110,7 @@ namespace WebScriptHook.Framework
                 networkThread.Start();
 
                 IsRunning = true;
+                Logger.Log("WebScriptHook component \"" + Name + "\" started.", LogType.Info);
             }
         }
 
@@ -155,7 +156,7 @@ namespace WebScriptHook.Framework
                 try
                 {
                     // Process this message
-                    Logger.Log("Executing " + input.Cmd, LogType.Debug);
+                    Logger.Log("Executing " + input.ToString(), LogType.Debug);
                     object retVal = PluginManager.Instance.Dispatch(input.Cmd, input.Args);
                     // Only return real values. Do not return NoOutput messages
                     if (retVal == null || retVal.GetType() != typeof(NoOutput))
@@ -223,7 +224,7 @@ namespace WebScriptHook.Framework
         {
             // Component requests the server to create a channel for this component
             ws.Send(JsonConvert.SerializeObject(new ChannelRequest(Name, MAX_INPUTS_PER_UPDATE)));
-            Logger.Log("WebSocket connection established: " + ws.Url);
+            Logger.Log("WebSocket connection established: " + ws.Url, LogType.Info);
         }
     }
 }
