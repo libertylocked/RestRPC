@@ -7,7 +7,7 @@ function sendInput(targetComponent, cmd, args, callback, errorCallback) {
     dataType: 'text',
     data: stringified,
     cache: false,
-    timeout: 2000,
+    timeout: 10000,
     success: callback,
     error: errorCallback,
   });
