@@ -13,11 +13,12 @@ namespace WebScriptHook.Framework
 {
     public class WebScriptHookComponent
     {
-        const int MAX_INPUTS_PER_UPDATE = 50;
+        const int CHANNEL_SIZE = 50;
 
         static AutoResetEvent networkWaitHandle = new AutoResetEvent(false);
         WebSocket ws;
         Thread networkThread;
+        DateTime lastPollTime = DateTime.Now;
 
         ConcurrentQueue<WebInput> inputQueue = new ConcurrentQueue<WebInput>();
         ConcurrentQueue<WebOutput> outputQueue = new ConcurrentQueue<WebOutput>();
@@ -27,7 +28,6 @@ namespace WebScriptHook.Framework
             ContractResolver = new WritablePropertiesOnlyResolver(),
             NullValueHandling = NullValueHandling.Ignore
         };
-        byte[] pulseBytes = new byte[] { };
 
         /// <summary>
         /// Gets the name of this WebScriptHook component
@@ -42,6 +42,15 @@ namespace WebScriptHook.Framework
         /// Gets information on the remote this component is connecting to
         /// </summary>
         public Uri RemoteUri
+        {
+            get;
+            private set;
+        }
+
+        /// <summary>
+        /// Gets the rate the component polls messages from server
+        /// </summary>
+        public TimeSpan PollingRate
         {
             get;
             private set;
@@ -67,22 +76,24 @@ namespace WebScriptHook.Framework
         /// Constructor
         /// </summary>
         /// <param name="componentName">The name of this WebScriptHook component</param>
-        /// <param name="remoteSettings">Remote server settings</param>
-        public WebScriptHookComponent(string componentName, Uri remoteUri)
-        : this(componentName, remoteUri, null, LogType.None)
+        /// <param name="remoteUri">Remote server settings</param>
+        /// <param name="pollingRate">Rate to poll messages from server. It is always bound by the update rate</param>
+        public WebScriptHookComponent(string componentName, Uri remoteUri, TimeSpan pollingRate)
+        : this(componentName, remoteUri, pollingRate, null, LogType.None)
         { }
 
         /// <summary>
         /// Constructor
         /// </summary>
         /// <param name="componentName">The name of this WebScriptHook component</param>
-        /// <param name="remoteSettings">Remote server settings</param>
+        /// <param name="remoteUri">Remote server settings</param>
         /// <param name="logWriter">Log writer</param>
         /// <param name="logLevel">Level of logging</param>
-        public WebScriptHookComponent(string componentName, Uri remoteUri, TextWriter logWriter, LogType logLevel)
+        public WebScriptHookComponent(string componentName, Uri remoteUri, TimeSpan pollingRate, TextWriter logWriter, LogType logLevel)
         {
             this.Name = componentName;
             this.RemoteUri = remoteUri;
+            this.PollingRate = pollingRate;
 
             Logger.Writer = logWriter;
             Logger.LogLevel = logLevel;
@@ -195,12 +206,11 @@ namespace WebScriptHook.Framework
                         ws.Send(JsonConvert.SerializeObject(output, outSerializerSettings));
                     }
 
-                    // Send a pulse to server if component have nothing to return
-                    // So that the server knows this component is still alive
-                    // Also can be used for frame syncing
-                    if (!outputExists)
+                    // Send a pulse to poll messages queued on the server
+                    if (DateTime.Now - lastPollTime > PollingRate)
                     {
-                        ws.Send(pulseBytes);
+                        ws.Send(new byte[] { });
+                        lastPollTime = DateTime.Now;
                     }
                 }
                 catch (Exception exc)
@@ -223,7 +233,7 @@ namespace WebScriptHook.Framework
         private void WS_OnOpen(object sender, EventArgs e)
         {
             // Component requests the server to create a channel for this component
-            ws.Send(JsonConvert.SerializeObject(new ChannelRequest(Name, MAX_INPUTS_PER_UPDATE)));
+            ws.Send(JsonConvert.SerializeObject(new ChannelRequest(Name, CHANNEL_SIZE)));
             Logger.Log("WebSocket connection established: " + ws.Url, LogType.Info);
         }
     }
