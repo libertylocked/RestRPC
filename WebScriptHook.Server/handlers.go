@@ -31,7 +31,7 @@ func handleStatusGet(w http.ResponseWriter, r *http.Request) {
 	// Lists all the components connected and their remote endpoints
 	componentList := []componentRecord{}
 	for k, v := range componentNameMap {
-		componentList = append(componentList, componentRecord{v, k.RemoteAddr})
+		componentList = append(componentList, componentRecord{v, k.RemoteAddr().String()})
 	}
 	jsonOutput, err := json.Marshal(componentList)
 	if err != nil {
@@ -65,7 +65,7 @@ func handleInputPost(w http.ResponseWriter, r *http.Request) {
 		}()
 		timeout := make(chan bool, 1)
 		go func() {
-			time.Sleep(1 * time.Second)
+			time.Sleep(time.Duration(serverConfig.Message.Timeout) * time.Second)
 			timeout <- true
 		}()
 		// Now we wait till the component sends the return value back, or it times out

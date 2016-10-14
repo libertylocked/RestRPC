@@ -12,6 +12,9 @@ var serverConfig = struct {
 	Server struct {
 		Port string
 	}
+	Message struct {
+		Timeout int
+	}
 	TLS struct {
 		UseHTTPS bool
 		Cert     string
