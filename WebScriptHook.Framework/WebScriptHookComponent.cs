@@ -195,22 +195,27 @@ namespace WebScriptHook.Framework
                     // WS doesn't throw exceptions when connection fails or unconnected
                     if (!ws.IsAlive) ws.Connect();
 
+                    // Send a pulse to poll messages queued on the server
+                    if (DateTime.Now - lastPollTime > PollingRate)
+                    {
+                        ws.Send(new byte[] { });
+                        lastPollTime = DateTime.Now;
+                    }
+
                     // Send output data
                     bool outputExists = outputQueue.Count > 0;
                     WebOutput output;
                     while (outputQueue.TryDequeue(out output))
                     {
                         // Serialize the object to JSON then send back to server.
-                        // Word of warning: If some plugin attempts to send an object that cannot be seralized, 
-                        // this iteration of worker update will be terminated. Whatever is left on the queue may be unsent.
-                        ws.Send(JsonConvert.SerializeObject(output, outSerializerSettings));
-                    }
-
-                    // Send a pulse to poll messages queued on the server
-                    if (DateTime.Now - lastPollTime > PollingRate)
-                    {
-                        ws.Send(new byte[] { });
-                        lastPollTime = DateTime.Now;
+                        try
+                        {
+                            ws.Send(JsonConvert.SerializeObject(output, outSerializerSettings));
+                        }
+                        catch (Exception sendExc)
+                        {
+                            Logger.Log(sendExc.ToString(), LogType.Error);
+                        }
                     }
                 }
                 catch (Exception exc)
