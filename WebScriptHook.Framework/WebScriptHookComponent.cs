@@ -191,36 +191,41 @@ namespace WebScriptHook.Framework
 
                 try
                 {
-                    // Check if connection is alive. If not, attempt to connect to server
-                    // WS doesn't throw exceptions when connection fails or unconnected
-                    if (!ws.IsAlive) ws.Connect();
-
-                    // Send a pulse to poll messages queued on the server
-                    if (DateTime.Now - lastPollTime > PollingRate)
-                    {
-                        ws.Send(new byte[] { });
-                        lastPollTime = DateTime.Now;
-                    }
-
-                    // Send output data
-                    bool outputExists = outputQueue.Count > 0;
-                    WebOutput output;
-                    while (outputQueue.TryDequeue(out output))
-                    {
-                        // Serialize the object to JSON then send back to server.
-                        try
-                        {
-                            ws.Send(JsonConvert.SerializeObject(output, outSerializerSettings));
-                        }
-                        catch (Exception sendExc)
-                        {
-                            Logger.Log(sendExc.ToString(), LogType.Error);
-                        }
-                    }
+                    NetworkUpdate();
                 }
                 catch (Exception exc)
                 {
                     Logger.Log(exc.ToString(), LogType.Error);
+                }
+            }
+        }
+
+        private void NetworkUpdate()
+        {
+            // Check if connection is alive. If not, attempt to connect to server
+            // WS doesn't throw exceptions when connection fails or unconnected
+            if (!ws.IsAlive) ws.Connect();
+
+            // Send a pulse to poll messages queued on the server
+            if (DateTime.Now - lastPollTime > PollingRate)
+            {
+                ws.Send(new byte[] { });
+                lastPollTime = DateTime.Now;
+            }
+
+            // Send output data
+            bool outputExists = outputQueue.Count > 0;
+            WebOutput output;
+            while (outputQueue.TryDequeue(out output))
+            {
+                // Serialize the object to JSON then send back to server.
+                try
+                {
+                    ws.Send(JsonConvert.SerializeObject(output, outSerializerSettings));
+                }
+                catch (Exception sendExc)
+                {
+                    Logger.Log(sendExc.ToString(), LogType.Error);
                 }
             }
         }
