@@ -21,7 +21,7 @@ var upgrader = websocket.Upgrader{
 	WriteBufferSize: 1024,
 }
 
-var componentNameMap = make(map[*http.Request]string) // Maps a component WS connection to its name
+var componentNameMap = make(map[*websocket.Conn]string) // Maps a component WS connection to its name
 
 func handleComponentWS(w http.ResponseWriter, r *http.Request) {
 	c, err := upgrader.Upgrade(w, r, nil)
@@ -32,8 +32,8 @@ func handleComponentWS(w http.ResponseWriter, r *http.Request) {
 	defer func() {
 		// Remove the component name from name map and its channel from channel map
 		c.Close()
-		delete(inChMap, componentNameMap[r])
-		delete(componentNameMap, r)
+		delete(inChMap, componentNameMap[c])
+		delete(componentNameMap, c)
 		log.Println("Component disconnected:", r.RemoteAddr)
 	}()
 	log.Println("Component connected:", r.RemoteAddr)
@@ -48,16 +48,11 @@ func handleComponentWS(w http.ResponseWriter, r *http.Request) {
 		}
 		var output WebOutput
 		json.Unmarshal(data, &output)
-		processOutput(output, r)
-
-		// Dequeue all inputs and send to component, if a channel has been made
-		if componentNameMap[r] != "" && inChMap[componentNameMap[r]] != nil {
-			deliverInputs(c, componentNameMap[r])
-		}
+		processOutput(output, c)
 	}
 }
 
-func processOutput(output WebOutput, r *http.Request) {
+func processOutput(output WebOutput, c *websocket.Conn) {
 	// defer func() {
 	// 	if rec := recover(); rec != nil {
 	// 		fmt.Println("Error processing component output:", output)
@@ -69,12 +64,15 @@ func processOutput(output WebOutput, r *http.Request) {
 	switch output.Header {
 	case "n":
 		// A channel open request
-		componentNameMap[r] = output.Data[0].(string)
-		inChMap[componentNameMap[r]] = make(chan WebInput, int(output.Data[1].(float64)))
+		componentNameMap[c] = output.Data[0].(string)
+		inChMap[componentNameMap[c]] = make(chan WebInput, int(output.Data[1].(float64)))
 		log.Println("WS: Component requested input channel:", output.Data)
 	case "p", "":
 		// A pulse can have either 'p' header, or no header at all
-
+		// Dequeue all inputs and send to component, if a channel has been made
+		if componentNameMap[c] != "" && inChMap[componentNameMap[c]] != nil {
+			deliverInputs(c, componentNameMap[c])
+		}
 	case "c":
 		// A cache request
 
