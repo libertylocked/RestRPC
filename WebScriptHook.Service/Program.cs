@@ -29,7 +29,7 @@ namespace WebScriptHook.Service
                 return;
             }
 
-            wshComponent = new WebScriptHookComponent(componentName, remoteUri, Console.Out, LogType.All);
+            wshComponent = new WebScriptHookComponent(componentName, remoteUri, TimeSpan.FromMilliseconds(30), Console.Out, LogType.All);
             // Register custom plugins
             wshComponent.PluginManager.RegisterPlugin(new Echo());
             wshComponent.PluginManager.RegisterPlugin(new PluginList());
