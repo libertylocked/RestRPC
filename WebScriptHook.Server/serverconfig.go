@@ -20,10 +20,6 @@ var serverConfig = struct {
 		Cert     string
 		Key      string
 	}
-	WebSocketAuth struct {
-		Username string
-		Password string
-	}
 }{}
 
 func readConfig() {
