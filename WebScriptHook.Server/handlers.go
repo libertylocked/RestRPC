@@ -65,7 +65,7 @@ func handleInputPost(w http.ResponseWriter, r *http.Request) {
 		}()
 		timeout := make(chan bool, 1)
 		go func() {
-			time.Sleep(time.Duration(serverConfig.Message.Timeout) * time.Second)
+			time.Sleep(time.Duration(serverConfig.Message.Timeout) * time.Millisecond)
 			timeout <- true
 		}()
 		// Now we wait till the component sends the return value back, or it times out
