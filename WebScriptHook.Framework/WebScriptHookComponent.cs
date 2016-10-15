@@ -221,7 +221,6 @@ namespace WebScriptHook.Framework
             }
 
             // Send output data
-            bool outputExists = outputQueue.Count > 0;
             WebOutput output;
             while (outputQueue.TryDequeue(out output))
             {
