@@ -12,6 +12,12 @@ namespace WebScriptHook.Service
         [Option('n', "name", Required = false, HelpText = "Name of this component")]
         public string Name { get; set; }
 
+        [Option('u', "username", Required = true, HelpText = "Username for HTTP auth")]
+        public string Username { get; set; }
+
+        [Option('p', "password", Required = true, HelpText = "Password for HTTP auth")]
+        public string Password { get; set; }
+
         [HelpOption]
         public string GetUsage()
         {

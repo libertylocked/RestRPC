@@ -78,8 +78,11 @@ namespace WebScriptHook.Framework
         /// <param name="componentName">The name of this WebScriptHook component</param>
         /// <param name="remoteUri">Remote server settings</param>
         /// <param name="pollingRate">Rate to poll messages from server. It is always bound by the update rate</param>
-        public WebScriptHookComponent(string componentName, Uri remoteUri, TimeSpan pollingRate)
-        : this(componentName, remoteUri, pollingRate, null, LogType.None)
+        /// <param name="username">Username for HTTP auth</param>
+        /// <param name="password">Password for HTTP auth</param>
+        public WebScriptHookComponent(string componentName, Uri remoteUri, TimeSpan pollingRate, 
+            string username, string password)
+        : this(componentName, remoteUri, pollingRate, username, password, null, LogType.None)
         { }
 
         /// <summary>
@@ -87,9 +90,13 @@ namespace WebScriptHook.Framework
         /// </summary>
         /// <param name="componentName">The name of this WebScriptHook component</param>
         /// <param name="remoteUri">Remote server settings</param>
+        /// <param name="pollingRate">Rate to poll messages from server. It is always bound by the update rate</param>
+        /// <param name="username">Username for HTTP auth</param>
+        /// <param name="password">Password for HTTP auth</param>
         /// <param name="logWriter">Log writer</param>
         /// <param name="logLevel">Level of logging</param>
-        public WebScriptHookComponent(string componentName, Uri remoteUri, TimeSpan pollingRate, TextWriter logWriter, LogType logLevel)
+        public WebScriptHookComponent(string componentName, Uri remoteUri, TimeSpan pollingRate, 
+            string username, string password, TextWriter logWriter, LogType logLevel)
         {
             this.Name = componentName;
             this.RemoteUri = remoteUri;
@@ -102,8 +109,8 @@ namespace WebScriptHook.Framework
             ws = new WebSocket(remoteUri.ToString());
             ws.OnMessage += WS_OnMessage;
             ws.OnOpen += WS_OnOpen;
-            // TODO: Add WebSocket authentication
-            //ws.SetCredentials("username", "password", true);
+            // HTTP basic auth
+            ws.SetCredentials(username, password, true);
 
             // Create plugin manager instance
             PluginManager.CreateInstance();
