@@ -4,14 +4,23 @@ using System.Diagnostics;
 
 namespace WebScriptHook.Framework
 {
+    /// <summary>
+    /// Logger writes logs to a TextWriter
+    /// </summary>
     public class Logger
     {
+        /// <summary>
+        /// Gets the TextWriter logger is writing to
+        /// </summary>
         public static TextWriter Writer
         {
             get;
             internal set;
         }
 
+        /// <summary>
+        /// Gets the log level
+        /// </summary>
         public static LogType LogLevel
         {
             get;

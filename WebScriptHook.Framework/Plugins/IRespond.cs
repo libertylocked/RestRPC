@@ -5,6 +5,11 @@
     /// </summary>
     public interface IRespond
     {
+        /// <summary>
+        /// Respond to a call
+        /// </summary>
+        /// <param name="args"></param>
+        /// <returns></returns>
         object Respond(object[] args);
     }
 }

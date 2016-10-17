@@ -5,6 +5,15 @@
     /// </summary>
     public abstract class Plugin
     {
+        internal PluginManager PluginManager
+        {
+            get;
+            set;
+        }
+
+        /// <summary>
+        /// Gets the plugin ID implementation. Internal plugins can override this property
+        /// </summary>
         protected internal virtual string PluginIDImpl
         {
             get
@@ -31,7 +40,7 @@
         /// <returns>Object returned by the callee</returns>
         protected object Dispatch(string targetID, object[] args)
         {
-            return PluginManager.Instance.Dispatch(targetID, args);
+            return PluginManager.Dispatch(targetID, args);
         }
         
 
@@ -42,7 +51,7 @@
         /// <param name="value">Value of the entry in the cache map</param>
         protected void SetCache(string key, object value)
         {
-            PluginManager.Instance.SetCache(PluginID, key, value);
+            PluginManager.SetCache(PluginID, key, value);
         }
     }
 }

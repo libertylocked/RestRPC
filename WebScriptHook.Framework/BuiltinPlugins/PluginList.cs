@@ -19,11 +19,11 @@ namespace WebScriptHook.Framework.BuiltinPlugins
         /// <summary>
         /// Gets the list of plugins loaded in the plugin manager
         /// </summary>
-        /// <param name="args">Not used<param>
+        /// <param name="args">Not used</param>
         /// <returns>An array of ID strings of plugins loaded</returns>
         public object Respond(object[] args)
         {
-            return PluginManager.Instance.PluginIDs;
+            return PluginManager.PluginIDs;
         }
     }
 }

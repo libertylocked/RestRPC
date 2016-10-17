@@ -5,6 +5,9 @@
     /// </summary>
     public interface IUpdate
     {
+        /// <summary>
+        /// Runs an update cycle
+        /// </summary>
         void Update();
     }
 }

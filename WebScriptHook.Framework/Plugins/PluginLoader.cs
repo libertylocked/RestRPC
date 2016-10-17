@@ -6,6 +6,9 @@ using System.Reflection;
 
 namespace WebScriptHook.Framework.Plugins
 {
+    /// <summary>
+    /// Plugin loader provides functionalities to load plugins from an external assembly
+    /// </summary>
     public class PluginLoader
     {
         /// <summary>

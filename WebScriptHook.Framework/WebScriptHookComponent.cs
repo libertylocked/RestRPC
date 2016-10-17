@@ -56,20 +56,30 @@ namespace WebScriptHook.Framework
             private set;
         }
 
+        /// <summary>
+        /// Gets an indicator whether the component is actively running
+        /// </summary>
         public bool IsRunning
         {
             get;
             private set;
         } = false;
 
+        /// <summary>
+        /// Gets an indicator whether the component has connected to the server
+        /// </summary>
         public bool IsConnected
         {
             get { return ws != null && ws.IsAlive; }
         }
 
+        /// <summary>
+        /// Gets the instance of PluginManager in this component
+        /// </summary>
         public PluginManager PluginManager
         {
-            get { return PluginManager.Instance; }
+            get;
+            set;
         }
 
         /// <summary>
@@ -113,7 +123,7 @@ namespace WebScriptHook.Framework
             ws.SetCredentials(username, password, true);
 
             // Create plugin manager instance
-            PluginManager.CreateInstance();
+            PluginManager = new PluginManager();
         }
 
         /// <summary>
@@ -160,7 +170,7 @@ namespace WebScriptHook.Framework
             networkWaitHandle.Set();
 
             // Tick plugin manager
-            PluginManager.Instance.Update();
+            PluginManager.Update();
 
             // Process input messages
             ProcessInputMessages();
@@ -175,7 +185,7 @@ namespace WebScriptHook.Framework
                 {
                     // Process this message
                     Logger.Log("Executing " + input.ToString(), LogType.Debug);
-                    object retVal = PluginManager.Instance.Dispatch(input.Cmd, input.Args);
+                    object retVal = PluginManager.Dispatch(input.Cmd, input.Args);
                     // Only return real values. Do not return NoOutput messages
                     if (retVal == null || retVal.GetType() != typeof(NoOutput))
                     {

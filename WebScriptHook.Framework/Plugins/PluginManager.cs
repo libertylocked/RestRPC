@@ -5,42 +5,29 @@ using WebScriptHook.Framework.Messages.Outputs;
 
 namespace WebScriptHook.Framework.Plugins
 {
+    /// <summary>
+    /// Plugin manager manages plugins which contains procedures that can be called
+    /// </summary>
     public class PluginManager
     {
-        static PluginManager instance;
-
         Dictionary<string, Plugin> pluginMap = new Dictionary<string, Plugin>();
         HashSet<Plugin> tickablePlugins = new HashSet<Plugin>();
         List<Plugin> offendingPlugins = new List<Plugin>();
 
+        /// <summary>
+        /// Gets the IDs of plugins registered in this plugin manager
+        /// </summary>
         public string[] PluginIDs
         {
             get { return pluginMap.Keys.ToArray(); }
         }
 
-        internal static PluginManager Instance
-        {
-            get
-            {
-                if (instance == null) CreateInstance();
-                return instance;
-            }
-        }
-
         /// <summary>
         /// Constructor
         /// </summary>
-        private PluginManager() { }
-
-        /// <summary>
-        /// Creates an instance of Plugin Manager
-        /// </summary>
-        /// <returns></returns>
-        internal static PluginManager CreateInstance()
+        public PluginManager()
         {
-            instance = new PluginManager();
             Logger.Log("Plugin manager instantiated", LogType.Info);
-            return instance;
         }
 
         internal void Update()
@@ -90,6 +77,11 @@ namespace WebScriptHook.Framework.Plugins
             throw new NotImplementedException();
         }
 
+        /// <summary>
+        /// Registers a plugin
+        /// </summary>
+        /// <param name="plugin"></param>
+        /// <returns>True if plugin is successfully registered</returns>
         public bool RegisterPlugin(Plugin plugin)
         {
             string key = plugin.PluginID;
@@ -110,9 +102,16 @@ namespace WebScriptHook.Framework.Plugins
                 Logger.Log("Found tickable plugin: " + plugin.GetType(), LogType.Info);
             }
 
+            // Set plugin manager property of the plugin
+            plugin.PluginManager = this;
+
             return true;
         }
 
+        /// <summary>
+        /// Unregisters a plugin
+        /// </summary>
+        /// <param name="plugin">The plugin instance to be unregistered. It must be already registered</param>
         public void UnregisterPlugin(Plugin plugin)
         {
             // Drop from tickables
