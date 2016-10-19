@@ -2,7 +2,6 @@
 using System;
 using System.Collections.Concurrent;
 using System.IO;
-using System.Threading;
 using WebScriptHook.Framework.Messages.Inputs;
 using WebScriptHook.Framework.Messages.Outputs;
 using WebScriptHook.Framework.Plugins;
@@ -15,9 +14,7 @@ namespace WebScriptHook.Framework
     {
         const int CHANNEL_SIZE = 50;
 
-        static AutoResetEvent networkWaitHandle = new AutoResetEvent(false);
         WebSocket ws;
-        Thread networkThread;
         DateTime lastPollTime = DateTime.Now;
 
         ConcurrentQueue<WebInput> inputQueue = new ConcurrentQueue<WebInput>();
@@ -57,7 +54,7 @@ namespace WebScriptHook.Framework
         }
 
         /// <summary>
-        /// Gets an indicator whether the component is actively running
+        /// Gets an indicator whether the component is running network updates.
         /// </summary>
         public bool IsRunning
         {
@@ -66,12 +63,13 @@ namespace WebScriptHook.Framework
         } = false;
 
         /// <summary>
-        /// Gets an indicator whether the component has connected to the server
+        /// Gets the state of WebSocket connection
         /// </summary>
-        public bool IsConnected
+        public ConnectionState ConnectionState
         {
-            get { return ws != null && ws.IsAlive; }
-        }
+            get;
+            private set;
+        } = ConnectionState.Disconnected;
 
         /// <summary>
         /// Gets the instance of PluginManager in this component
@@ -87,7 +85,7 @@ namespace WebScriptHook.Framework
         /// </summary>
         /// <param name="componentName">The name of this WebScriptHook component</param>
         /// <param name="remoteUri">Remote server settings</param>
-        /// <param name="pollingRate">Rate to poll messages from server. It is always bound by the update rate</param>
+        /// <param name="pollingRate">Rate to poll messages from server</param>
         /// <param name="username">Username for HTTP auth</param>
         /// <param name="password">Password for HTTP auth</param>
         public WebScriptHookComponent(string componentName, Uri remoteUri, TimeSpan pollingRate, 
@@ -100,7 +98,7 @@ namespace WebScriptHook.Framework
         /// </summary>
         /// <param name="componentName">The name of this WebScriptHook component</param>
         /// <param name="remoteUri">Remote server settings</param>
-        /// <param name="pollingRate">Rate to poll messages from server. It is always bound by the update rate</param>
+        /// <param name="pollingRate">Rate to poll messages from server</param>
         /// <param name="username">Username for HTTP auth</param>
         /// <param name="password">Password for HTTP auth</param>
         /// <param name="logWriter">Log writer</param>
@@ -119,6 +117,8 @@ namespace WebScriptHook.Framework
             ws = new WebSocket(remoteUri.ToString());
             ws.OnMessage += WS_OnMessage;
             ws.OnOpen += WS_OnOpen;
+            ws.OnClose += WS_OnClose;
+            ws.OnError += WS_OnError;
             // HTTP basic auth
             ws.SetCredentials(username, password, true);
 
@@ -127,18 +127,14 @@ namespace WebScriptHook.Framework
         }
 
         /// <summary>
-        /// Creates connection to the remote server
+        /// Starts connection to the remote server. 
+        /// The component will always attempt to reconnect if disconnected while it is running
         /// </summary>
         public void Start()
         {
             if (!IsRunning)
             {
-                networkThread = new Thread(NetworkWorker_ThreadProc);
-                networkThread.IsBackground = true;
-                networkThread.Start();
-
                 IsRunning = true;
-                Logger.Log("WebScriptHook component \"" + Name + "\" started.", LogType.Info);
             }
         }
 
@@ -150,9 +146,6 @@ namespace WebScriptHook.Framework
         {
             if (IsRunning)
             {
-                // Abort network thread and close ws connection
-                networkThread.Abort();
-                ws.Close(CloseStatusCode.Normal);
                 // Clear queues
                 inputQueue = new ConcurrentQueue<WebInput>();
                 outputQueue = new ConcurrentQueue<WebOutput>();
@@ -166,14 +159,41 @@ namespace WebScriptHook.Framework
         /// </summary>
         public void Update()
         {
-            // Signal network worker
-            networkWaitHandle.Set();
-
             // Tick plugin manager
             PluginManager.Update();
 
             // Process input messages
             ProcessInputMessages();
+
+            // Send messages over websocket
+            NetworkUpdate();
+        }
+
+        private void NetworkUpdate()
+        {
+            // Only perform network update once per polling interval
+            if (DateTime.Now - lastPollTime < PollingRate) return;
+            lastPollTime = DateTime.Now;
+
+            // Connect ws if running and ws not connected
+            if (IsRunning && ConnectionState == ConnectionState.Disconnected)
+            {
+                ws.ConnectAsync();
+                ConnectionState = ConnectionState.Connecting;
+            }
+
+            // Disconnect if not running and ws open
+            if (!IsRunning && ConnectionState == ConnectionState.Connected)
+            {
+                ws.CloseAsync(CloseStatusCode.Normal);
+                ConnectionState = ConnectionState.Closing;
+            }
+
+            // Send messages on socket when connection is open
+            if (ConnectionState == ConnectionState.Connected)
+            {
+                ProcessOutputMessages();
+            }
         }
 
         private void ProcessInputMessages()
@@ -199,36 +219,16 @@ namespace WebScriptHook.Framework
             }
         }
 
-        private void NetworkWorker_ThreadProc()
+        private void ProcessOutputMessages()
         {
-            while (true)
+            // Output messages can only be processed when websocket connection is open
+            if (ws.ReadyState != WebSocketState.Open)
             {
-                // Wait until a tick happens
-                networkWaitHandle.WaitOne();
-
-                try
-                {
-                    NetworkUpdate();
-                }
-                catch (Exception exc)
-                {
-                    Logger.Log(exc.ToString(), LogType.Error);
-                }
+                throw new Exception("Cannot process output messages when WebSocket connection is not open!");
             }
-        }
-
-        private void NetworkUpdate()
-        {
-            // Check if connection is alive. If not, attempt to connect to server
-            // WS doesn't throw exceptions when connection fails or unconnected
-            if (!ws.IsAlive) ws.Connect();
 
             // Send a pulse to poll messages queued on the server
-            if (DateTime.Now - lastPollTime > PollingRate)
-            {
-                ws.Send(new byte[] { });
-                lastPollTime = DateTime.Now;
-            }
+            ws.SendAsync(new byte[] { }, null);
 
             // Send output data
             WebOutput output;
@@ -237,7 +237,7 @@ namespace WebScriptHook.Framework
                 // Serialize the object to JSON then send back to server.
                 try
                 {
-                    ws.Send(JsonConvert.SerializeObject(output, outSerializerSettings));
+                    ws.SendAsync(JsonConvert.SerializeObject(output, outSerializerSettings), null);
                 }
                 catch (Exception sendExc)
                 {
@@ -259,8 +259,24 @@ namespace WebScriptHook.Framework
         private void WS_OnOpen(object sender, EventArgs e)
         {
             // Component requests the server to create a channel for this component
-            ws.Send(JsonConvert.SerializeObject(new ChannelRequest(Name, CHANNEL_SIZE)));
+            ws.SendAsync(JsonConvert.SerializeObject(new ChannelRequest(Name, CHANNEL_SIZE)), null);
+            ConnectionState = ConnectionState.Connected;
             Logger.Log("WebSocket connection established: " + ws.Url, LogType.Info);
+        }
+
+        private void WS_OnClose(object sender, CloseEventArgs e)
+        {
+            // This can occur either when socket connect fails or socket disconnects while connected
+            if (ConnectionState != ConnectionState.Connecting)
+            {
+                Logger.Log("WebSocket connection closed: " + ws.Url, LogType.Info);
+            }
+            ConnectionState = ConnectionState.Disconnected;
+        }
+
+        private void WS_OnError(object sender, WebSocketSharp.ErrorEventArgs e)
+        {
+            Logger.Log("WebSocket error: " + e.Message, LogType.Error);
         }
     }
 }
