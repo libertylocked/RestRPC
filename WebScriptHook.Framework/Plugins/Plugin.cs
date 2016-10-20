@@ -53,5 +53,12 @@
         {
             PluginManager.SetCache(PluginID, key, value);
         }
+
+        /// <summary>
+        /// Respond to a call to this procedure
+        /// </summary>
+        /// <param name="args"></param>
+        /// <returns></returns>
+        public abstract object Respond(object[] args);
     }
 }

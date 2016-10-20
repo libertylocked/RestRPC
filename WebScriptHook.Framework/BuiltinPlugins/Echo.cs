@@ -3,7 +3,7 @@ using WebScriptHook.Framework.Plugins;
 
 namespace WebScriptHook.Framework.BuiltinPlugins
 {
-    public class Echo : Plugin, IRespond
+    public class Echo : Plugin
     {
         protected internal override string PluginIDImpl
         {
@@ -13,7 +13,7 @@ namespace WebScriptHook.Framework.BuiltinPlugins
             }
         }
 
-        public object Respond(object[] args)
+        public override object Respond(object[] args)
         {
             StringBuilder sb = new StringBuilder();
             foreach (var arg in args)

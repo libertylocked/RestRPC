@@ -1,12 +1,11 @@
 ﻿using System;
 using WebScriptHook.Framework.Plugins;
-using WebScriptHook.Framework.Messages.Outputs;
 
 namespace WebScriptHook.Service.Plugins
 {
-    class PrintToScreen : Plugin, IRespond
+    class PrintToScreen : Plugin
     {
-        public object Respond(object[] args)
+        public override object Respond(object[] args)
         {
             foreach (object arg in args)
             {

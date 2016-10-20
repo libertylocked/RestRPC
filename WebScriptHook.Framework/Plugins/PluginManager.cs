@@ -57,10 +57,10 @@ namespace WebScriptHook.Framework.Plugins
         internal object Dispatch(string pluginId, object[] args)
         {
             Plugin callee;
-            // Can only dispatch if the pluginID is found and the plugin implements IRespond
-            if (pluginMap.TryGetValue(pluginId, out callee) && (callee is IRespond))
+            // Can only dispatch if the pluginID is found
+            if (pluginMap.TryGetValue(pluginId, out callee))
             {
-                return (callee as IRespond).Respond(args);
+                return callee.Respond(args);
             }
             else
             {

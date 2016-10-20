@@ -63,7 +63,7 @@
     <Compile Include="Logger.cs" />
     <Compile Include="Messages\Outputs\NoOutput.cs" />
     <Compile Include="Messages\Outputs\WebOutput.cs" />
-    <Compile Include="Plugins\IRespond.cs" />
+    <Compile Include="Plugins\Procedure.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Serialization\WritablePropertiesOnlyResolver.cs" />
     <Compile Include="Messages\Inputs\WebInput.cs" />
