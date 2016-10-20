@@ -3,16 +3,13 @@ using RestRPC.Framework.Plugins;
 
 namespace RestRPC.Framework.BuiltinPlugins
 {
-    public class Echo : Plugin
+    internal class Echo : Plugin
     {
-        protected internal override string PluginIDImpl
-        {
-            get
-            {
-                return "echo";
-            }
-        }
-
+        /// <summary>
+        /// Returns the input args concatenated as a string
+        /// </summary>
+        /// <param name="args"></param>
+        /// <returns></returns>
         public override object Respond(object[] args)
         {
             StringBuilder sb = new StringBuilder();

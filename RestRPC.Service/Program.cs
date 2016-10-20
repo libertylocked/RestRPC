@@ -3,7 +3,6 @@ using System;
 using System.IO;
 using System.Threading;
 using RestRPC.Framework;
-using RestRPC.Framework.BuiltinPlugins;
 using RestRPC.Framework.Plugins;
 using RestRPC.Service.Plugins;
 
@@ -32,16 +31,14 @@ namespace RestRPC.Service
             wshComponent = new RestRPCComponent(componentName, remoteUri, TimeSpan.FromMilliseconds(30), 
                 options.Username, options.Password, Console.Out, LogType.All);
             // Register custom plugins
-            wshComponent.PluginManager.RegisterPlugin(new Echo());
-            wshComponent.PluginManager.RegisterPlugin(new PluginList());
-            wshComponent.PluginManager.RegisterPlugin(new PrintToScreen());
+            wshComponent.PluginManager.RegisterPlugin(new PrintToScreen(), "print");
             // Load plugins in plugins directory if dir exists
             if (Directory.Exists("plugins"))
             {
                 var plugins = PluginLoader.LoadAllPluginsFromDir("plugins", "*.dll");
                 foreach (var plug in plugins)
                 {
-                    wshComponent.PluginManager.RegisterPlugin(plug);
+                    wshComponent.PluginManager.RegisterPlugin(plug, plug.GetType().FullName);
                 }
             }
 

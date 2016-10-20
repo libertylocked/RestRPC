@@ -12,24 +12,13 @@
         }
 
         /// <summary>
-        /// Gets the plugin ID implementation. Internal plugins can override this property
-        /// </summary>
-        protected internal virtual string PluginIDImpl
-        {
-            get
-            {
-                // This allows internal builtin plugins to override their ID string
-                return this.GetType().Assembly.GetName().Name + "." + this.GetType().FullName;
-            }
-        }
-
-        /// <summary>
-        /// Gets the callable ID of the plugin. ID string is 
-        /// in the format of assemblyname.namespace.classname
+        /// Gets the ID of the plugin
+        /// ID is used as "method" when calling this plugin's procedure
         /// </summary>
         public string PluginID
         {
-            get { return PluginIDImpl; }
+            get;
+            internal set;
         }
 
         /// <summary>
@@ -42,7 +31,6 @@
         {
             return PluginManager.Dispatch(targetID, args);
         }
-        
 
         /// <summary>
         /// Requests the key-value pair be cached in this plugin's cache map, on the server
@@ -55,7 +43,7 @@
         }
 
         /// <summary>
-        /// Respond to a call to this procedure
+        /// Respond to a call to this plugin's procedure
         /// </summary>
         /// <param name="args"></param>
         /// <returns></returns>

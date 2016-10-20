@@ -1,7 +1,8 @@
-﻿using System;
+﻿using RestRPC.Framework.BuiltinPlugins;
+using RestRPC.Framework.Messages.Outputs;
+using System;
 using System.Collections.Generic;
 using System.Linq;
-using RestRPC.Framework.Messages.Outputs;
 
 namespace RestRPC.Framework.Plugins
 {
@@ -28,6 +29,9 @@ namespace RestRPC.Framework.Plugins
         public PluginManager()
         {
             Logger.Log("Plugin manager instantiated", LogType.Info);
+            // Register built-in plugins
+            RegisterPlugin(new PluginList(), "pluginlist");
+            RegisterPlugin(new Echo(), "echo");
         }
 
         internal void Update()
@@ -80,12 +84,11 @@ namespace RestRPC.Framework.Plugins
         /// <summary>
         /// Registers a plugin
         /// </summary>
-        /// <param name="plugin"></param>
+        /// <param name="plugin">The plugin to be registered</param>
+        /// <param name="key">ID of the procedure. Must be unique or register will fail</param>
         /// <returns>True if plugin is successfully registered</returns>
-        public bool RegisterPlugin(Plugin plugin)
-        {
-            string key = plugin.PluginID;
-            
+        public bool RegisterPlugin(Plugin plugin, string key)
+        {            
             if (pluginMap.ContainsKey(key))
             {
                 Logger.Log("Plugin key collision! Plugin will not be loaded: " + key, LogType.Error);
@@ -104,6 +107,8 @@ namespace RestRPC.Framework.Plugins
 
             // Set plugin manager property of the plugin
             plugin.PluginManager = this;
+            // Set plugin id property of this plugin
+            plugin.PluginID = key;
 
             return true;
         }

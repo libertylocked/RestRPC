@@ -6,16 +6,8 @@ namespace RestRPC.Framework.BuiltinPlugins
     /// A built-in plugin of RestRPC
     /// Handles "pluginlist" request and returns the list of plugins loaded
     /// </summary>
-    public class PluginList : Plugin
+    internal class PluginList : Plugin
     {
-        protected internal override string PluginIDImpl
-        {
-            get
-            {
-                return "pluginlist";
-            }
-        }
-
         /// <summary>
         /// Gets the list of plugins loaded in the plugin manager
         /// </summary>
