@@ -19,7 +19,7 @@ type WebInput struct {
 	// The remote procedure to call
 	Cmd string
 	// Arguments to be passed to the remote procedure
-	Args []interface{} `json:",omitempty"`
+	Args []interface{}
 	// Set by server. UID attached to this request is the unique ID of the requester
 	// In POST, this is unique per POST. In WS, this is unique per WS connection
 	UID uuid.UUID
