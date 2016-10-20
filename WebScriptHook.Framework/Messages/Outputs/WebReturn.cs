@@ -1,4 +1,5 @@
 ﻿using Newtonsoft.Json;
+using WebScriptHook.Framework.Messages.Inputs;
 
 namespace WebScriptHook.Framework.Messages.Outputs
 {
@@ -10,8 +11,8 @@ namespace WebScriptHook.Framework.Messages.Outputs
         const char HEADER_RETURN = 'r';
 
         [JsonConstructor]
-        public WebReturn(object Data, string UID)
-            : base(HEADER_RETURN, new object[] { Data }, UID)
+        public WebReturn(object Data, WebInput input)
+            : base(HEADER_RETURN, new object[] { Data }, input.UID, input.CID)
         { }
     }
 }

@@ -12,7 +12,7 @@
         const char HEADER_CHANNEL = 'n';
 
         public ChannelRequest(string ComponentName, int InputQueueLimit)
-            : base(HEADER_CHANNEL, new object[] { ComponentName, InputQueueLimit }, null)
+            : base(HEADER_CHANNEL, new object[] { ComponentName, InputQueueLimit }, null, null)
         {
         }
     }

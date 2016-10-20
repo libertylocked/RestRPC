@@ -12,7 +12,7 @@ namespace WebScriptHook.Framework.Messages.Outputs
 
         [JsonConstructor]
         public Pulse()
-            : base(HEADER_PULSE, null, null)
+            : base(HEADER_PULSE, null, null, null)
         { }
     }
 }

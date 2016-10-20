@@ -209,7 +209,7 @@ namespace WebScriptHook.Framework
                     // Only return real values. Do not return NoOutput messages
                     if (retVal == null || retVal.GetType() != typeof(NoOutput))
                     {
-                        outputQueue.Enqueue(new WebReturn(retVal, input.UID));
+                        outputQueue.Enqueue(new WebReturn(retVal, input));
                     }
                 }
                 catch (Exception ex)

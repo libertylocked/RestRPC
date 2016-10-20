@@ -12,11 +12,20 @@ import (
 
 // WebInput represents an input request sent by web clients
 type WebInput struct {
-	Header byte   // The header of the request
-	Target string `json:",omitempty"` // The target WSH component this request is going to. This field is not sent to the component
-	Cmd    string
-	Args   []interface{} `json:",omitempty"`
-	UID    uuid.UUID     // UID attached to this request. Used to identify the response to this request when the response is sent over socket
+	// Set by server. The header of the request
+	Header string `json:",omitempty"`
+	// The target component this request is going to. This field is omitted when sending to the component
+	Target string `json:",omitempty"`
+	// The remote procedure to call
+	Cmd string
+	// Arguments to be passed to the remote procedure
+	Args []interface{} `json:",omitempty"`
+	// Set by server. UID attached to this request is the unique ID of the requester
+	// In POST, this is unique per POST. In WS, this is unique per WS connection
+	UID uuid.UUID
+	// Custom ID. Only used by WS clients, not POST clients
+	// This field is not necessarily unique
+	CID string `json:",omitempty"`
 }
 
 type componentRecord struct {
@@ -24,13 +33,13 @@ type componentRecord struct {
 	Remote string
 }
 
-var inChMap = make(map[string]chan WebInput)        // Input channel map, used to send inputs from web to components. Key is component ID
-var retChMap = make(map[uuid.UUID]chan interface{}) // Return data map, used for WSH component return values
+var inChMap = map[string]chan WebInput{}        // Input channel map, used to send inputs from web to components. Key is component ID
+var retChMap = map[uuid.UUID]chan interface{}{} // Return data map, used for WSH component send return data to its requester
 
 func handleStatusGet(w http.ResponseWriter, r *http.Request) {
 	// Lists all the components connected and their remote endpoints
 	componentList := []componentRecord{}
-	for k, v := range componentNameMap {
+	for k, v := range registeredConnections {
 		componentList = append(componentList, componentRecord{v, k.RemoteAddr().String()})
 	}
 	jsonOutput, err := json.Marshal(componentList)

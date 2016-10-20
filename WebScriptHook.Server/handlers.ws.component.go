@@ -14,6 +14,7 @@ type WebOutput struct {
 	Header string
 	Data   []interface{}
 	UID    string
+	CID    string
 }
 
 var upgrader = websocket.Upgrader{
@@ -21,7 +22,7 @@ var upgrader = websocket.Upgrader{
 	WriteBufferSize: 1024,
 }
 
-var componentNameMap = make(map[*websocket.Conn]string) // Maps a component WS connection to its name
+var registeredConnections = map[*websocket.Conn]string{} // Maps a component WS connection to its name
 
 func handleComponentWS(w http.ResponseWriter, r *http.Request) {
 	c, err := upgrader.Upgrade(w, r, nil)
@@ -32,8 +33,8 @@ func handleComponentWS(w http.ResponseWriter, r *http.Request) {
 	defer func() {
 		// Remove the component name from name map and its channel from channel map
 		c.Close()
-		delete(inChMap, componentNameMap[c])
-		delete(componentNameMap, c)
+		delete(inChMap, registeredConnections[c])
+		delete(registeredConnections, c)
 		log.Println("Component disconnected:", r.RemoteAddr)
 	}()
 	log.Println("Component connected:", r.RemoteAddr)
@@ -64,14 +65,28 @@ func processOutput(output WebOutput, c *websocket.Conn) {
 	switch output.Header {
 	case "n":
 		// A channel open request
-		componentNameMap[c] = output.Data[0].(string)
-		inChMap[componentNameMap[c]] = make(chan WebInput, int(output.Data[1].(float64)))
-		log.Println("WS: Component requested input channel:", output.Data)
+		// An unsuccessful channel request will cause the server to close the connection
+		reqName := output.Data[0].(string)
+		reqSize := int(output.Data[1].(float64))
+		if reqName == "" || reqSize <= 0 {
+			// Deny channel request if name is empty or size is negative or zero
+			log.Println("WS: Bad channel request! Invalid arguments:", output.Data)
+			c.Close()
+		} else if inChMap[reqName] != nil || registeredConnections[c] != "" {
+			// Deny channel request if named channel already exists, or
+			// the connection has already registered a name
+			log.Println("WS: Bad channel request! Name already exists:", output.Data)
+			c.Close()
+		} else {
+			registeredConnections[c] = reqName
+			inChMap[reqName] = make(chan WebInput, reqSize)
+			log.Println("WS: Component requested input channel:", output.Data)
+		}
 	case "p", "":
 		// A pulse can have either 'p' header, or no header at all
 		// Dequeue all inputs and send to component, if a channel has been made
-		if componentNameMap[c] != "" && inChMap[componentNameMap[c]] != nil {
-			deliverInputs(c, componentNameMap[c])
+		if registeredConnections[c] != "" && inChMap[registeredConnections[c]] != nil {
+			deliverInputs(c, registeredConnections[c])
 		}
 	case "c":
 		// A cache request
