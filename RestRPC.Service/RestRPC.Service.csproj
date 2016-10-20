@@ -58,7 +58,7 @@
     <None Include="packages.config" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\WebScriptHook.Framework\RestRPC.Framework.csproj">
+    <ProjectReference Include="..\RestRPC.Framework\RestRPC.Framework.csproj">
       <Project>{9132701d-ce79-4303-b7d4-11632faf3ad6}</Project>
       <Name>RestRPC.Framework</Name>
     </ProjectReference>
