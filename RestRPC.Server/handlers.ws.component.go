@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"log"
 	"net/http"
+	"reflect"
 
 	"github.com/gorilla/websocket"
 	"github.com/satori/go.uuid"
@@ -12,7 +13,7 @@ import (
 // WebOutput is the output message sent by WSH components
 type WebOutput struct {
 	Header string
-	Data   []interface{}
+	Data   interface{}
 	UID    string
 	CID    string
 }
@@ -54,28 +55,31 @@ func handleComponentWS(w http.ResponseWriter, r *http.Request) {
 }
 
 func processOutput(output WebOutput, c *websocket.Conn) {
-	// defer func() {
-	// 	if rec := recover(); rec != nil {
-	// 		fmt.Println("Error processing component output:", output)
-	// 		return
-	// 	}
-	// }()
+	defer func() {
+		if rec := recover(); rec != nil {
+			log.Println("Error processing component message:", output, rec)
+			return
+		}
+	}()
 
 	// Read the header
 	switch output.Header {
 	case "n":
+		req := reflect.ValueOf(output.Data)
 		// A channel open request
 		// An unsuccessful channel request will cause the server to close the connection
-		reqName := output.Data[0].(string)
-		reqSize := int(output.Data[1].(float64))
+		reqName := req.Index(0).Interface().(string)
+		reqSize := int(req.Index(1).Interface().(float64))
 		if reqName == "" || reqSize <= 0 {
 			// Deny channel request if name is empty or size is negative or zero
 			log.Println("WS: Bad channel request! Invalid arguments:", output.Data)
+			// XXX: Send a response to service instead of closing connection
 			c.Close()
 		} else if inChMap[reqName] != nil || registeredConnections[c] != "" {
 			// Deny channel request if named channel already exists, or
 			// the connection has already registered a name
 			log.Println("WS: Bad channel request! Name already exists:", output.Data)
+			// XXX: Send a response to service instead of closing connection
 			c.Close()
 		} else {
 			registeredConnections[c] = reqName
@@ -94,8 +98,8 @@ func processOutput(output WebOutput, c *websocket.Conn) {
 	case "r":
 		// A return value
 		uid, _ := uuid.FromString(output.UID)
-		if retChMap[uid] != nil && len(output.Data) != 0 {
-			retChMap[uid] <- output.Data[0]
+		if retChMap[uid] != nil {
+			retChMap[uid] <- output.Data
 			log.Println("WS: Returned output for:", uid)
 		}
 	default:

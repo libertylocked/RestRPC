@@ -10,14 +10,14 @@ namespace RestRPC.Framework.Messages.Outputs
         [JsonProperty]
         public char Header { get; set; }
         [JsonProperty]
-        public object[] Data { get; set; }
+        public object Data { get; set; }
         [JsonProperty]
         public string UID { get; private set; }
         [JsonProperty]
         public string CID { get; private set; }
 
         [JsonConstructor]
-        public WebOutput(char Header, object[] Data, string UID, string CID)
+        public WebOutput(char Header, object Data, string UID, string CID)
         {
             this.Header = Header;
             this.Data = Data;
