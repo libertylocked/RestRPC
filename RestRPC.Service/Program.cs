@@ -32,7 +32,7 @@ namespace RestRPC.Service
                 options.Username, options.Password, Console.Out, LogType.All);
             // Register custom plugins and procedures
             wshComponent.PluginManager.RegisterPlugin("print", new PrintToScreen());
-            wshComponent.PluginManager.RegisterProcedure("osversion", OSVersionProcedure);
+            wshComponent.PluginManager.RegisterProcedure("osversion", (inputArgs) => { return Environment.OSVersion.VersionString; });
             // Load plugins in plugins directory if dir exists
             if (Directory.Exists("plugins"))
             {
@@ -52,11 +52,6 @@ namespace RestRPC.Service
                 wshComponent.Update();
                 Thread.Sleep(100);
             }
-        }
-
-        static object OSVersionProcedure(object[] args)
-        {
-            return Environment.OSVersion.VersionString;
         }
     }
 }
