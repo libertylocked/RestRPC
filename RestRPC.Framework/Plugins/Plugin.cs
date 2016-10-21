@@ -12,16 +12,6 @@
         }
 
         /// <summary>
-        /// Gets the ID of the plugin
-        /// ID is used as "method" when calling this plugin's procedure
-        /// </summary>
-        public string PluginID
-        {
-            get;
-            internal set;
-        }
-
-        /// <summary>
         /// Dispatch another plugin loaded in Plugin Manager
         /// </summary>
         /// <param name="targetID">Callee's plugin ID</param>
@@ -39,7 +29,7 @@
         /// <param name="value">Value of the entry in the cache map</param>
         protected void SetCache(string key, object value)
         {
-            PluginManager.SetCache(PluginID, key, value);
+            PluginManager.SetCache(key, value);
         }
 
         /// <summary>

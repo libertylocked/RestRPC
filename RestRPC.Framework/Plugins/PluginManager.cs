@@ -11,16 +11,24 @@ namespace RestRPC.Framework.Plugins
     /// </summary>
     public class PluginManager
     {
-        Dictionary<string, Plugin> pluginMap = new Dictionary<string, Plugin>();
+        Dictionary<string, Procedure> procedureMap = new Dictionary<string, Procedure>();
         HashSet<Plugin> tickablePlugins = new HashSet<Plugin>();
         List<Plugin> offendingPlugins = new List<Plugin>();
 
         /// <summary>
-        /// Gets the IDs of plugins registered in this plugin manager
+        /// Gets the ID of procedures registered in this plugin manager
         /// </summary>
-        public string[] PluginIDs
+        public string[] ProcedureIDs
         {
-            get { return pluginMap.Keys.ToArray(); }
+            get { return procedureMap.Keys.ToArray(); }
+        }
+
+        /// <summary>
+        /// Gets a list of tickable plugins registered within the plugin manager
+        /// </summary>
+        public Plugin[] TickablePlugins
+        {
+            get { return tickablePlugins.ToArray(); }
         }
 
         /// <summary>
@@ -30,8 +38,8 @@ namespace RestRPC.Framework.Plugins
         {
             Logger.Log("Plugin manager instantiated", LogType.Info);
             // Register built-in plugins
-            RegisterPlugin(new PluginList(), "pluginlist");
-            RegisterPlugin(new Echo(), "echo");
+            RegisterPlugin("pluginlist", new PluginList());
+            RegisterPlugin("echo", new Echo());
         }
 
         internal void Update()
@@ -58,13 +66,13 @@ namespace RestRPC.Framework.Plugins
             }
         }
 
-        internal object Dispatch(string pluginId, object[] args)
+        internal object Dispatch(string procedureID, object[] args)
         {
-            Plugin callee;
-            // Can only dispatch if the pluginID is found
-            if (pluginMap.TryGetValue(pluginId, out callee))
+            Procedure method;
+            // Can only dispatch if the procedureID is found
+            if (procedureMap.TryGetValue(procedureID, out method))
             {
-                return callee.Respond(args);
+                return method(args);
             }
             else
             {
@@ -73,63 +81,103 @@ namespace RestRPC.Framework.Plugins
             }
         }
 
-        internal void SetCache(string pluginId, string key, object value)
+        internal void SetCache(string key, object value)
         {
-            WebOutput cacheRequestMessage = new SetCacheRequest(pluginId, key, value);
+            WebOutput cacheRequestMessage = new SetCacheRequest(key, value);
 
             // TODO: This message needs to be added to the output message queue
             throw new NotImplementedException();
         }
 
         /// <summary>
-        /// Registers a plugin
+        /// Registers a plugin. If plugin is tickable, it's also added to the tickable list
         /// </summary>
+        /// <param name="procedureID">ID of the procedure. Must be unique or register will fail</param>
         /// <param name="plugin">The plugin to be registered</param>
-        /// <param name="key">ID of the procedure. Must be unique or register will fail</param>
         /// <returns>True if plugin is successfully registered</returns>
-        public bool RegisterPlugin(Plugin plugin, string key)
-        {            
-            if (pluginMap.ContainsKey(key))
+        public bool RegisterPlugin(string procedureID, Plugin plugin)
+        {
+            // Add plugin's procedure
+            if (!RegisterProcedure(procedureID, plugin.Respond))
             {
-                Logger.Log("Plugin key collision! Plugin will not be loaded: " + key, LogType.Error);
                 return false;
             }
-
-            pluginMap.Add(key, plugin);
-            Logger.Log("Plugin registered: " + key, LogType.Info);
 
             // If tickable, add to tickable list
             if (plugin is IUpdate)
             {
-                tickablePlugins.Add(plugin);
-                Logger.Log("Found tickable plugin: " + plugin.GetType(), LogType.Info);
+                if (tickablePlugins.Add(plugin))
+                {
+                    Logger.Log("Added to tickable list: " + plugin.GetType(), LogType.Info);
+                }
+                else
+                {
+                    // Allow the same plugin instance to be added twice (for alias purposes)
+                    Logger.Log("Plugin is already in tickable list: " + plugin.GetType(), LogType.Info);
+                }
             }
 
             // Set plugin manager property of the plugin
             plugin.PluginManager = this;
-            // Set plugin id property of this plugin
-            plugin.PluginID = key;
 
             return true;
         }
 
         /// <summary>
-        /// Unregisters a plugin
+        /// Unregisters the plugin's procedure and removes it from being ticked if tickable
         /// </summary>
         /// <param name="plugin">The plugin instance to be unregistered. It must be already registered</param>
         public void UnregisterPlugin(Plugin plugin)
         {
-            // Drop from tickables
-            if (plugin != null && tickablePlugins.Contains(plugin))
+            // Remove this plugin's procedure from the procedure map
+            // This also removes all the aliases
+            foreach (var item in procedureMap.Where(pair => pair.Value == plugin.Respond).ToList())
+            {
+                procedureMap.Remove(item.Key);
+            }
+
+            // If this plugin is tickable, remove it from tickable plugins list
+            if (tickablePlugins.Contains(plugin))
             {
                 tickablePlugins.Remove(plugin);
             }
 
-            // Drop from plugin map
-            foreach (var item in pluginMap.Where(pair => pair.Value == plugin).ToList())
+            plugin.PluginManager = null;
+        }
+
+        /// <summary>
+        /// Registers a procedure
+        /// </summary>
+        /// <param name="procedureID">ID of the procedure</param>
+        /// <param name="procedure"></param>
+        /// <returns></returns>
+        public bool RegisterProcedure(string procedureID, Procedure procedure)
+        {
+            if (procedureMap.ContainsKey(procedureID))
             {
-                pluginMap.Remove(item.Key);
+                Logger.Log("Procedure key collision! " + procedureID, LogType.Error);
+                return false;
             }
+
+            // Add procedure to procedure map
+            procedureMap.Add(procedureID, procedure);
+            Logger.Log("Procedure registered: " + procedureID, LogType.Info);
+            return true;
+        }
+
+        /// <summary>
+        /// Unregisters a procedure 
+        /// If this is used to unregister a tickable plugin's procedure, the plugin itself will not be unticked
+        /// </summary>
+        /// <param name="procedureID"></param>
+        public void UnregisterProcedure(string procedureID)
+        {
+            if (procedureMap.ContainsKey(procedureID))
+            {
+                procedureMap.Remove(procedureID);
+            }
+
+            Logger.Log("Procedure unregistered: " + procedureID, LogType.Info);
         }
     }
 }

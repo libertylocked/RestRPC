@@ -15,7 +15,7 @@ namespace RestRPC.Framework.BuiltinPlugins
         /// <returns>An array of ID strings of plugins loaded</returns>
         public override object Respond(object[] args)
         {
-            return PluginManager.PluginIDs;
+            return PluginManager.ProcedureIDs;
         }
     }
 }

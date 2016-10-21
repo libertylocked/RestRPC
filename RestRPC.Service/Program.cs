@@ -30,15 +30,16 @@ namespace RestRPC.Service
 
             wshComponent = new RestRPCComponent(componentName, remoteUri, TimeSpan.FromMilliseconds(30), 
                 options.Username, options.Password, Console.Out, LogType.All);
-            // Register custom plugins
-            wshComponent.PluginManager.RegisterPlugin(new PrintToScreen(), "print");
+            // Register custom plugins and procedures
+            wshComponent.PluginManager.RegisterPlugin("print", new PrintToScreen());
+            wshComponent.PluginManager.RegisterProcedure("osversion", OSVersionProcedure);
             // Load plugins in plugins directory if dir exists
             if (Directory.Exists("plugins"))
             {
                 var plugins = PluginLoader.LoadAllPluginsFromDir("plugins", "*.dll");
                 foreach (var plug in plugins)
                 {
-                    wshComponent.PluginManager.RegisterPlugin(plug, plug.GetType().FullName);
+                    wshComponent.PluginManager.RegisterPlugin(plug.GetType().FullName, plug);
                 }
             }
 
@@ -51,6 +52,11 @@ namespace RestRPC.Service
                 wshComponent.Update();
                 Thread.Sleep(100);
             }
+        }
+
+        static object OSVersionProcedure(object[] args)
+        {
+            return Environment.OSVersion.VersionString;
         }
     }
 }
