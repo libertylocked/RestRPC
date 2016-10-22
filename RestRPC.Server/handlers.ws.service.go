@@ -10,14 +10,6 @@ import (
 	"github.com/satori/go.uuid"
 )
 
-// WebOutput is the output message sent by WSH components
-type WebOutput struct {
-	Header string
-	Data   interface{}
-	UID    string
-	CID    string
-}
-
 var upgrader = websocket.Upgrader{
 	ReadBufferSize:  1024,
 	WriteBufferSize: 1024,
@@ -36,74 +28,85 @@ func handleComponentWS(w http.ResponseWriter, r *http.Request) {
 		c.Close()
 		delete(inChMap, registeredConnections[c])
 		delete(registeredConnections, c)
-		log.Println("Component disconnected:", r.RemoteAddr)
+		log.Println("WS: Component disconnected:", r.RemoteAddr)
 	}()
-	log.Println("Component connected:", r.RemoteAddr)
+	log.Println("WS: Component connected:", r.RemoteAddr)
 
 	for {
-		// Read message from plugin
-		// This will block until an output (return value, pulse, etc) is received.
+		// Read message from component
+		// This will block until a service message (return value, pulse, etc) is received.
 		_, data, err := c.ReadMessage()
 		if err != nil {
 			log.Println("WS:", err)
 			break
 		}
-		var output WebOutput
-		json.Unmarshal(data, &output)
-		processOutput(output, c)
+		var msg ServiceMessage
+		err = json.Unmarshal(data, &msg)
+		if err != nil {
+			log.Println("WS: Error unmarshalling message!", err, string(data))
+		} else {
+			processServiceMessage(msg, c)
+		}
 	}
 }
 
-func processOutput(output WebOutput, c *websocket.Conn) {
+func processServiceMessage(msg ServiceMessage, c *websocket.Conn) {
 	defer func() {
 		if rec := recover(); rec != nil {
-			log.Println("Error processing component message:", output, rec)
+			log.Println("WS: Error processing service message:", msg, rec)
 			return
 		}
 	}()
 
 	// Read the header
-	switch output.Header {
+	switch msg.Header {
 	case "n":
-		req := reflect.ValueOf(output.Data)
+		req := reflect.ValueOf(msg.Data)
 		// A channel open request
 		// An unsuccessful channel request will cause the server to close the connection
 		reqName := req.Index(0).Interface().(string)
 		reqSize := int(req.Index(1).Interface().(float64))
 		if reqName == "" || reqSize <= 0 {
 			// Deny channel request if name is empty or size is negative or zero
-			log.Println("WS: Bad channel request! Invalid arguments:", output.Data)
+			log.Println("WS: Bad channel request! Invalid arguments:", msg.Data)
 			// XXX: Send a response to service instead of closing connection
 			c.Close()
 		} else if inChMap[reqName] != nil || registeredConnections[c] != "" {
 			// Deny channel request if named channel already exists, or
 			// the connection has already registered a name
-			log.Println("WS: Bad channel request! Name already exists:", output.Data)
+			log.Println("WS: Bad channel request! Name already exists:", msg.Data)
 			// XXX: Send a response to service instead of closing connection
 			c.Close()
 		} else {
 			registeredConnections[c] = reqName
-			inChMap[reqName] = make(chan WebInput, reqSize)
-			log.Println("WS: Component requested input channel:", output.Data)
+			inChMap[reqName] = make(chan ClientMessage, reqSize)
+			log.Println("WS: Component requested input channel:", msg.Data)
 		}
+
 	case "p", "":
 		// A pulse can have either 'p' header, or no header at all
 		// Dequeue all inputs and send to component, if a channel has been made
 		if registeredConnections[c] != "" && inChMap[registeredConnections[c]] != nil {
 			deliverInputs(c, registeredConnections[c])
 		}
+
 	case "c":
 		// A cache request
 
 	case "r":
 		// A return value
-		uid, _ := uuid.FromString(output.UID)
-		if retChMap[uid] != nil {
-			retChMap[uid] <- output.Data
+		uid, _ := uuid.FromString(msg.UID)
+		retMsg := ProcedureReturn{msg.Data, msg.CID}
+		select {
+		case retChMap[uid] <- retMsg:
 			log.Println("WS: Returned output for:", uid)
+		default:
+			// Fails if either the return channel is full, or the return channel has been deleted
+			log.Println("WS: Return channel unavailable. Discarding:", msg)
 		}
+
 	default:
-		log.Println("WS: Unknown output format:", output)
+		log.Println("WS: Unknown service message format:", msg)
 	}
 }
 
