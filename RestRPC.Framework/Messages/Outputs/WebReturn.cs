@@ -12,7 +12,7 @@ namespace RestRPC.Framework.Messages.Outputs
 
         [JsonConstructor]
         public WebReturn(object Data, WebInput input)
-            : base(HEADER_RETURN, new object[] { Data }, input.UID, input.CID)
+            : base(HEADER_RETURN, Data, input.UID, input.CID)
         { }
     }
 }
