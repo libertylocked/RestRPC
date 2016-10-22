@@ -228,7 +228,7 @@ namespace RestRPC.Framework
             }
 
             // Send a pulse to poll messages queued on the server
-            ws.SendAsync(new byte[] { }, null);
+            ws.SendAsync("{}", null);
 
             // Send output data
             WebOutput output;
