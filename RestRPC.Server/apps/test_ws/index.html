@@ -1,0 +1,70 @@
+<html>
+<head>
+  <title>Test dashboard</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1.0, user-scalable=no">
+  <link rel="stylesheet" href="/static/bootstrap-3.3.7-dist/css/bootstrap.min.css">
+  <link rel="stylesheet" href="/static/bootstrap-3.3.7-dist/css/bootstrap-theme.min.css">
+  <link rel="stylesheet" href="/static/font-awesome-4.6.3/css/font-awesome.min.css">
+  <link rel="stylesheet" href="style.css">
+  <script src="/static/jquery-3.1.1.min.js"></script>
+  <script src="/static/bootstrap-3.3.7-dist/js/bootstrap.min.js"></script>
+  <script src="/static/restrpc.js"></script>
+  <script src="testpage.js"></script>
+  <script>
+  $(document).ready(function(){
+    $("#uri").val("ws://localhost:25555/clientws");
+    $("#sendBtn").prop("disabled", true);
+
+    $("#connectBtn").click(connectClick);
+    $("#sendBtn").click(sendInputClick);
+    $("#addArgsBtn").click(addArgsClick);
+    $("#removeArgsBtn").click(removeArgsClick);
+    $("#msgClearBtn").click(messageClearClick);
+  });
+  </script>
+</head>
+<body>
+  <div class="container col-md-6">
+    <div class="container-fluid tab-pane active" id="tabInput">
+      <h2>WebSocket connection</h2>
+      <form role="form">
+        <div class="form-group">
+          <label for="uri">WS URI:</label>
+          <input type="text" class="form-control" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" id="uri">
+        </div>
+        <div class="form-group">
+          <button type="button" class="btn btn-primary btn-lg btn-block" data-toggle="modal" id="connectBtn">Connect</button>
+        </div>
+        <div class="form-group">
+          <label for="targetComponent">Target Component:</label>
+          <input type="text" class="form-control" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" id="targetComponent">
+        </div>
+        <div class="form-group">
+          <label for="cmd">Cmd:</label>
+          <input type="text" class="form-control" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" id="cmd">
+        </div>
+        <div class="form-group">
+          <label for="args">Args:</label>
+          <button type="button" class="btn btn-default" id="addArgsBtn"><i class="fa fa-plus fa-lg" aria-hidden="true"></i></button>
+          <button type="button" class="btn btn-default" id="removeArgsBtn"><i class="fa fa-minus fa-lg" aria-hidden="true"></i></button>
+        </div>
+        <div class="controls" id="argsDivs">
+        </div>
+        <div class="form-group">
+          <label for="cid">CID:</label>
+          <input type="text" class="form-control" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" id="cid">
+        </div>
+        <hr>
+        <button type="button" class="btn btn-primary btn-lg btn-block" data-toggle="modal" id="sendBtn">Write on WS</button>
+      </form>
+    </div>
+  </div>
+  <div class="container col-md-6">
+    <h3>Test dashboard by libertylocked</h3>
+    <hr>
+    <label>Socket messages:</label>
+    <button type="button" class="btn btn-default" id="msgClearBtn"><i class="fa fa-trash fa-lg" aria-hidden="true"></i> Clear</button>
+    <pre class="pre-scrollable" id="wsOutput"></pre>
+  </div>
+</div>
+</body>

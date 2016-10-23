@@ -2,7 +2,6 @@ package main
 
 import (
 	"encoding/json"
-	"fmt"
 	"log"
 	"net/http"
 
@@ -64,7 +63,6 @@ func handleClientWS(w http.ResponseWriter, r *http.Request) {
 			break
 		}
 		var input ClientMessage
-		fmt.Println(string(data))
 		err = json.Unmarshal(data, &input)
 		if err != nil {
 			log.Println("CWS: Error unmarshalling message!", err, string(data))
