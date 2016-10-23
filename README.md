@@ -1,5 +1,5 @@
 # RestRPC
-RestRPC is a framework that allows easy deployment and management of a client RPC network.
+RestRPC is a framework that allows easy deployment and management of a client-to-client RPC network.
 
 ## Features
 - Client-to-client RPC: Procedures are stored on clients and can be called by other clients
@@ -7,5 +7,6 @@ RestRPC is a framework that allows easy deployment and management of a client RP
 - Supports a network of RPC services
 - Service management on a web dashboard
 - REST API to call procedures on any connected service
+- RPC clients can also call procedures via WebSocket
 
 ## Specifications
