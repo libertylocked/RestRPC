@@ -11,7 +11,16 @@
   <script src="testpage.js"></script>
   <script>
   $(document).ready(function(){
-    $("#uri").val("ws://localhost:25555/clientws");
+    // Find WebSocket URI
+    var wsUri = "";
+    if (window.location.protocol=="https:") {
+      wsUri += "wss://";
+    } else {
+      wsUri += "ws://";
+    }
+    wsUri += window.location.host + "/clientws";
+    $("#uri").val(wsUri);
+
     $("#sendBtn").prop("disabled", true);
 
     $("#connectBtn").click(connectClick);
