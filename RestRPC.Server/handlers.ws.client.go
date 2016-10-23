@@ -27,7 +27,9 @@ func handleClientWS(w http.ResponseWriter, r *http.Request) {
 		// Signal the output routine to stop
 		stopOutputRoutine <- true
 		// Delete return channel for this client
+		retChLock.Lock()
 		delete(retChMap, clientUID)
+		retChLock.Unlock()
 		log.Println("CWS: Client disconnected:", r.RemoteAddr)
 	}()
 	log.Println("CWS: Client connected:", r.RemoteAddr, clientUID)
@@ -35,13 +37,16 @@ func handleClientWS(w http.ResponseWriter, r *http.Request) {
 	// Create a return channel for this client
 	// XXX: Hard code return channel size 50: if more than 50 outputs are received before dequeued to client,
 	// outputs will be discarded
-	retChMap[clientUID] = make(chan ProcedureReturn, 50)
+	retChannel := make(chan *ProcedureReturn, 50)
+	retChLock.Lock()
+	retChMap[clientUID] = retChannel
+	retChLock.Unlock()
 
 	// Start the output routine: listen on the return channel and send to client when outputs are received
 	go func() {
 		for {
 			select {
-			case retMsg := <-retChMap[clientUID]:
+			case retMsg := <-retChannel:
 				// A return message has arrived!
 				log.Println("CWS: Returning response to client:", clientUID)
 				c.WriteJSON(retMsg)
@@ -71,8 +76,11 @@ func handleClientWS(w http.ResponseWriter, r *http.Request) {
 		targetID := input.Target
 		input.Target = ""
 
+		inChLock.RLock()
+		inChannel := inChMap[targetID]
+		inChLock.RUnlock()
 		select {
-		case inChMap[targetID] <- input:
+		case inChannel <- &input:
 			log.Println("WSC: Sent:", input)
 		default:
 			// Fails to send the input because component's chan is full, or its channel does not exist

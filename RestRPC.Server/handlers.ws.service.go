@@ -15,10 +15,10 @@ var upgrader = websocket.Upgrader{
 	WriteBufferSize: 1024,
 }
 
-var registeredConnections = map[*websocket.Conn]string{} // Maps a component WS connection to its name
-
 func handleComponentWS(w http.ResponseWriter, r *http.Request) {
 	c, err := upgrader.Upgrade(w, r, nil)
+	newCookie := http.Cookie{}
+	r.AddCookie(&newCookie)
 	if err != nil {
 		log.Println("WS:", err)
 		return
@@ -26,8 +26,9 @@ func handleComponentWS(w http.ResponseWriter, r *http.Request) {
 	defer func() {
 		// Remove the component name from name map and its channel from channel map
 		c.Close()
-		delete(inChMap, registeredConnections[c])
-		delete(registeredConnections, c)
+		inChLock.Lock()
+		delete(inChMap, getComponentNameCookie(r))
+		inChLock.Unlock()
 		log.Println("WS: Component disconnected:", r.RemoteAddr)
 	}()
 	log.Println("WS: Component connected:", r.RemoteAddr)
@@ -45,12 +46,12 @@ func handleComponentWS(w http.ResponseWriter, r *http.Request) {
 		if err != nil {
 			log.Println("WS: Error unmarshalling message!", err, string(data))
 		} else {
-			processServiceMessage(msg, c)
+			processServiceMessage(msg, c, r)
 		}
 	}
 }
 
-func processServiceMessage(msg ServiceMessage, c *websocket.Conn) {
+func processServiceMessage(msg ServiceMessage, c *websocket.Conn, r *http.Request) {
 	defer func() {
 		if rec := recover(); rec != nil {
 			log.Println("WS: Error processing service message:", msg, rec)
@@ -66,28 +67,36 @@ func processServiceMessage(msg ServiceMessage, c *websocket.Conn) {
 		// An unsuccessful channel request will cause the server to close the connection
 		reqName := req.Index(0).Interface().(string)
 		reqSize := int(req.Index(1).Interface().(float64))
+		inChLock.RLock()
+		inChannel := inChMap[reqName]
+		inChLock.RUnlock()
 		if reqName == "" || reqSize <= 0 {
 			// Deny channel request if name is empty or size is negative or zero
 			log.Println("WS: Bad channel request! Invalid arguments:", msg.Data)
 			// XXX: Send a response to service instead of closing connection
 			c.Close()
-		} else if inChMap[reqName] != nil || registeredConnections[c] != "" {
+		} else if inChannel != nil || getComponentNameCookie(r) != "" {
 			// Deny channel request if named channel already exists, or
 			// the connection has already registered a name
 			log.Println("WS: Bad channel request! Name already exists:", msg.Data)
 			// XXX: Send a response to service instead of closing connection
 			c.Close()
 		} else {
-			registeredConnections[c] = reqName
-			inChMap[reqName] = make(chan ClientMessage, reqSize)
+			setComponentNameCookie(reqName, r)
+			inChLock.Lock()
+			inChMap[reqName] = make(chan *ClientMessage, reqSize)
+			inChLock.Unlock()
 			log.Println("WS: Component requested input channel:", msg.Data)
 		}
 
 	case "p", "":
 		// A pulse can have either 'p' header, or no header at all
 		// Dequeue all inputs and send to component, if a channel has been made
-		if registeredConnections[c] != "" && inChMap[registeredConnections[c]] != nil {
-			deliverInputs(c, registeredConnections[c])
+		inChLock.RLock()
+		inChannel := inChMap[getComponentNameCookie(r)]
+		inChLock.RUnlock()
+		if getComponentNameCookie(r) != "" && inChannel != nil {
+			deliverInputs(getComponentNameCookie(r), c)
 		}
 
 	case "c":
@@ -96,9 +105,12 @@ func processServiceMessage(msg ServiceMessage, c *websocket.Conn) {
 	case "r":
 		// A return value
 		uid, _ := uuid.FromString(msg.UID)
-		retMsg := ProcedureReturn{msg.Data, msg.CID}
+		retMsg := msg.GetProcedureReturn()
+		retChLock.RLock()
+		retChannel := retChMap[uid]
+		retChLock.RUnlock()
 		select {
-		case retChMap[uid] <- retMsg:
+		case retChannel <- retMsg:
 			log.Println("WS: Returned output for:", uid)
 		default:
 			// Fails if either the return channel is full, or the return channel has been deleted
@@ -110,11 +122,14 @@ func processServiceMessage(msg ServiceMessage, c *websocket.Conn) {
 	}
 }
 
-func deliverInputs(c *websocket.Conn, componentName string) {
+func deliverInputs(componentName string, c *websocket.Conn) {
 	inputQueueEmpty := false
+	inChLock.RLock()
+	inChannel := inChMap[componentName]
+	inChLock.RUnlock()
 	for !inputQueueEmpty {
 		select {
-		case input, ok := <-inChMap[componentName]:
+		case input, ok := <-inChannel:
 			if ok {
 				errWrite := c.WriteJSON(input)
 				if errWrite != nil {
@@ -129,4 +144,24 @@ func deliverInputs(c *websocket.Conn, componentName string) {
 			inputQueueEmpty = true
 		}
 	}
+}
+
+func setComponentNameCookie(name string, r *http.Request) {
+	cookie, err := r.Cookie("svcName")
+	if err != nil {
+		// Svc name cookie does not exist
+		ck := http.Cookie{Name: "svcName", Value: name}
+		r.AddCookie(&ck)
+	} else {
+		// Cookie does exist: overwrite it
+		cookie.Value = name
+	}
+}
+
+func getComponentNameCookie(r *http.Request) string {
+	cookie, err := r.Cookie("svcName")
+	if err != nil {
+		return ""
+	}
+	return cookie.Value
 }

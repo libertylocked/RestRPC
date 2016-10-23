@@ -1,6 +1,8 @@
 package main
 
 import (
+	"sync"
+
 	"github.com/satori/go.uuid"
 )
 
@@ -31,12 +33,20 @@ type ServiceMessage struct {
 }
 
 // ProcedureReturn is the message sent to clients
-// Data and CID comes from response WebOutput
+// Data and CID comes from response ServiceMessage
 // i.e. a trimmed version of WebOutput containing only the information clients are interested in
 type ProcedureReturn struct {
 	Data interface{}
 	CID  string
 }
 
-var inChMap = map[string]chan ClientMessage{}       // Input channel map, used to send inputs from web to components. Key is component ID
-var retChMap = map[uuid.UUID]chan ProcedureReturn{} // Return data map, used for RRPC component send return data to its requester
+// GetProcedureReturn gets a procedure return message from a Service Message
+func (svcMsg *ServiceMessage) GetProcedureReturn() *ProcedureReturn {
+	retMsg := ProcedureReturn{svcMsg.Data, svcMsg.CID}
+	return &retMsg
+}
+
+var inChMap = map[string]chan *ClientMessage{} // Input channel map, used to send inputs from web to components. Key is component ID
+var inChLock sync.RWMutex
+var retChMap = map[uuid.UUID]chan *ProcedureReturn{} // Return data map, used for RRPC component send return data to its requester
+var retChLock sync.RWMutex

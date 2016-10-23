@@ -10,17 +10,14 @@ import (
 	"github.com/satori/go.uuid"
 )
 
-type componentRecord struct {
-	Name   string
-	Remote string
-}
-
 func handleStatusGet(w http.ResponseWriter, r *http.Request) {
 	// Lists all the components connected and their remote endpoints
-	componentList := []componentRecord{}
-	for k, v := range registeredConnections {
-		componentList = append(componentList, componentRecord{v, k.RemoteAddr().String()})
+	componentList := []string{}
+	inChLock.RLock()
+	for k := range inChMap {
+		componentList = append(componentList, k)
 	}
+	inChLock.RUnlock()
 	jsonOutput, err := json.Marshal(componentList)
 	if err != nil {
 		http.Error(w, http.StatusText(500), 500)
@@ -43,13 +40,22 @@ func handleInputPost(w http.ResponseWriter, r *http.Request) {
 	targetID := input.Target
 	input.Target = ""
 
+	inChLock.RLock()
+	inChannel := inChMap[targetID]
+	inChLock.RUnlock()
+
 	select {
-	case inChMap[targetID] <- input:
+	case inChannel <- &input:
 		log.Println("POST: Sent:", input)
 		// Make a channel and wait for the return value for this input
-		retChMap[input.UID] = make(chan ProcedureReturn, 1)
+		retChannel := make(chan *ProcedureReturn, 1)
+		retChLock.Lock()
+		retChMap[input.UID] = retChannel
+		retChLock.Unlock()
 		defer func() {
+			retChLock.Lock()
 			delete(retChMap, input.UID)
+			retChLock.Unlock()
 		}()
 		timeout := make(chan bool, 1)
 		go func() {
@@ -58,7 +64,7 @@ func handleInputPost(w http.ResponseWriter, r *http.Request) {
 		}()
 		// Now we wait till the component sends the return value back, or it times out
 		select {
-		case retMessage := <-retChMap[input.UID]:
+		case retMessage := <-retChannel:
 			// A return message has arrived!
 			// Only need the data portion for POST. CID is only used for requesters on WS
 			seralizedRet, err := json.Marshal(retMessage.Data)
