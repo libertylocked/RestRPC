@@ -24,7 +24,7 @@
       success: function(data) {
         $("#servicesTitle").html(data.length + " services connected.");
         for (var i = 0; i < data.length; i++) {
-          var name = data;
+          var name = data[i];
           $("#servicesList").append("<li class='list-group-item col-md-3'><a href='#' id='svc_"+name+"' onclick='serviceOnClick(\""+name+"\")'>"+name+"</a></li>");
         }
       },
