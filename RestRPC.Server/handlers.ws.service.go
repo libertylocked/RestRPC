@@ -23,11 +23,17 @@ func handleComponentWS(w http.ResponseWriter, r *http.Request) {
 		log.Println("WS:", err)
 		return
 	}
+
 	defer func() {
 		// Remove the component name from name map and its channel from channel map
 		c.Close()
 		inChLock.Lock()
-		delete(inChMap, getComponentNameCookie(r))
+		inChannel := inChMap[getComponentNameCookie(r)]
+		if inChannel != nil {
+			// Close the channel
+			close(inChannel)
+			delete(inChMap, getComponentNameCookie(r))
+		}
 		inChLock.Unlock()
 		log.Println("WS: Component disconnected:", r.RemoteAddr)
 	}()
@@ -82,21 +88,15 @@ func processServiceMessage(msg ServiceMessage, c *websocket.Conn, r *http.Reques
 			// XXX: Send a response to service instead of closing connection
 			c.Close()
 		} else {
+			// Set component name, and make a new channel for this component
 			setComponentNameCookie(reqName, r)
+			newChannel := make(chan *ClientMessage, reqSize)
 			inChLock.Lock()
-			inChMap[reqName] = make(chan *ClientMessage, reqSize)
+			inChMap[reqName] = newChannel
 			inChLock.Unlock()
+			// Start a goroutine to listen on this channel and deliver inputs, until channel closes
+			go deliverInputsRoutine(newChannel, c)
 			log.Println("WS: Component requested input channel:", msg.Data)
-		}
-
-	case "p", "":
-		// A pulse can have either 'p' header, or no header at all
-		// Dequeue all inputs and send to component, if a channel has been made
-		inChLock.RLock()
-		inChannel := inChMap[getComponentNameCookie(r)]
-		inChLock.RUnlock()
-		if getComponentNameCookie(r) != "" && inChannel != nil {
-			deliverInputs(getComponentNameCookie(r), c)
 		}
 
 	case "c":
@@ -122,26 +122,19 @@ func processServiceMessage(msg ServiceMessage, c *websocket.Conn, r *http.Reques
 	}
 }
 
-func deliverInputs(componentName string, c *websocket.Conn) {
-	inputQueueEmpty := false
-	inChLock.RLock()
-	inChannel := inChMap[componentName]
-	inChLock.RUnlock()
-	for !inputQueueEmpty {
-		select {
-		case input, ok := <-inChannel:
-			if ok {
-				errWrite := c.WriteJSON(input)
-				if errWrite != nil {
-					log.Println("WS:", errWrite)
-				}
-				log.Println("WS: Dequeued:", input.UID)
-			} else {
-				log.Println("WS: Channel closed!")
+// A routine to continue deliver input messages to service until channel is closed
+func deliverInputsRoutine(inChannel chan *ClientMessage, c *websocket.Conn) {
+	for {
+		input, ok := <-inChannel
+		if ok {
+			errWrite := c.WriteJSON(input)
+			if errWrite != nil {
+				log.Println("WS:", errWrite)
 			}
-		default:
-			// The input message queue for this component is empty now
-			inputQueueEmpty = true
+			log.Println("WS: Dequeued:", input.UID)
+		} else {
+			log.Println("WS: Input channel closed!")
+			break
 		}
 	}
 }

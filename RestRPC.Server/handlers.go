@@ -54,6 +54,7 @@ func handleInputPost(w http.ResponseWriter, r *http.Request) {
 		retChLock.Unlock()
 		defer func() {
 			retChLock.Lock()
+			close(retChMap[input.UID])
 			delete(retChMap, input.UID)
 			retChLock.Unlock()
 		}()

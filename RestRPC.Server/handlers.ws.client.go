@@ -5,6 +5,8 @@ import (
 	"log"
 	"net/http"
 
+	"github.com/gorilla/websocket"
+
 	"github.com/satori/go.uuid"
 )
 
@@ -19,18 +21,6 @@ func handleClientWS(w http.ResponseWriter, r *http.Request) {
 
 	// Generate a UID to identify this client
 	clientUID := uuid.NewV4()
-	// Make a channel to signal the output goroutine to stop
-	stopOutputRoutine := make(chan bool, 1)
-	defer func() {
-		c.Close()
-		// Signal the output routine to stop
-		stopOutputRoutine <- true
-		// Delete return channel for this client
-		retChLock.Lock()
-		delete(retChMap, clientUID)
-		retChLock.Unlock()
-		log.Println("CWS: Client disconnected:", r.RemoteAddr)
-	}()
 	log.Println("CWS: Client connected:", r.RemoteAddr, clientUID)
 
 	// Create a return channel for this client
@@ -41,19 +31,18 @@ func handleClientWS(w http.ResponseWriter, r *http.Request) {
 	retChMap[clientUID] = retChannel
 	retChLock.Unlock()
 
-	// Start the output routine: listen on the return channel and send to client when outputs are received
-	go func() {
-		for {
-			select {
-			case retMsg := <-retChannel:
-				// A return message has arrived!
-				log.Println("CWS: Returning response to client:", clientUID)
-				c.WriteJSON(retMsg)
-			case <-stopOutputRoutine:
-				return
-			}
-		}
+	defer func() {
+		c.Close()
+		// Delete return channel for this client
+		retChLock.Lock()
+		close(retChMap[clientUID])
+		delete(retChMap, clientUID)
+		retChLock.Unlock()
+		log.Println("CWS: Client disconnected:", r.RemoteAddr)
 	}()
+
+	// Start the output routine: listen on the return channel and send to client when outputs are received
+	go deliverOutputsRoutine(retChannel, c)
 
 	for {
 		// Read input message from client
@@ -86,5 +75,22 @@ func handleClientWS(w http.ResponseWriter, r *http.Request) {
 			// TODO: Server respond with an error message
 		}
 
+	}
+}
+
+func deliverOutputsRoutine(retChannel chan *ProcedureReturn, c *websocket.Conn) {
+	for {
+		retMsg, ok := <-retChannel
+		if ok {
+			// A return message has arrived!
+			errWrite := c.WriteJSON(retMsg)
+			if errWrite != nil {
+				log.Println("CWS:", errWrite)
+			}
+			log.Println("CWS: Response returned:", retMsg)
+		} else {
+			log.Println("CWS: Return channel closed!")
+			break
+		}
 	}
 }

@@ -227,9 +227,6 @@ namespace RestRPC.Framework
                 throw new Exception("Cannot process output messages when WebSocket connection is not open!");
             }
 
-            // Send a pulse to poll messages queued on the server
-            ws.SendAsync("{}", null);
-
             // Send output data
             WebOutput output;
             while (outputQueue.TryDequeue(out output))
