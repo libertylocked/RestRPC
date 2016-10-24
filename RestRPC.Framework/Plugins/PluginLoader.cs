@@ -47,6 +47,7 @@ namespace RestRPC.Framework.Plugins
         /// Loads all plugins from a directory, recursively
         /// </summary>
         /// <param name="dirName">The directory to search for plugins in</param>
+        /// <param name="pattern">Search pattern. e.g. "*.dll" for dll files</param>
         /// <returns>The list of plugins found in the directory, all instantiated</returns>
         public static List<Plugin> LoadAllPluginsFromDir(string dirName, string pattern)
         {

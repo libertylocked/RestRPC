@@ -10,6 +10,9 @@ using WebSocketSharp;
 
 namespace RestRPC.Framework
 {
+    /// <summary>
+    /// RestRPCComponent communicates with an RRPC server and handles in/out messages
+    /// </summary>
     public class RestRPCComponent
     {
         const int CHANNEL_SIZE = 50;

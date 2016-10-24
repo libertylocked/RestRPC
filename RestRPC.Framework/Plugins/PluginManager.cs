@@ -83,7 +83,7 @@ namespace RestRPC.Framework.Plugins
 
         internal void SetCache(string key, object value)
         {
-            WebOutput cacheRequestMessage = new SetCacheRequest(key, value);
+            //WebOutput cacheRequestMessage = new SetCacheRequest(key, value);
 
             // TODO: This message needs to be added to the output message queue
             throw new NotImplementedException();
