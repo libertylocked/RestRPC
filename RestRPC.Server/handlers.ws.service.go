@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"log"
 	"net/http"
-	"reflect"
 
 	"github.com/gorilla/websocket"
 	"github.com/satori/go.uuid"
@@ -17,27 +16,29 @@ var upgrader = websocket.Upgrader{
 
 func handleComponentWS(w http.ResponseWriter, r *http.Request) {
 	c, err := upgrader.Upgrade(w, r, nil)
-	newCookie := http.Cookie{}
-	r.AddCookie(&newCookie)
 	if err != nil {
 		log.Println("WS:", err)
 		return
 	}
 
-	defer func() {
-		// Remove the component name from name map and its channel from channel map
-		c.Close()
-		inChLock.Lock()
-		inChannel := inChMap[getComponentNameCookie(r)]
-		if inChannel != nil {
-			// Close the channel
-			close(inChannel)
-			delete(inChMap, getComponentNameCookie(r))
-		}
-		inChLock.Unlock()
-		log.Println("WS: Component disconnected:", r.RemoteAddr)
-	}()
 	log.Println("WS: Component connected:", r.RemoteAddr)
+
+	// Create a channel for the service
+	svcName := getComponentNameCookie(r)
+	newChan := createInChannel(svcName)
+	if newChan == nil {
+		// XXX: Close connection if channel creation failed. Should respond with an error message
+		c.Close()
+	} else {
+		// If channel is successfully created, start input delivery routine
+		go deliverInputsRoutine(newChan, c)
+		defer func() {
+			// Close the channel and remove from in channel map
+			close(newChan)
+			delete(inChMap, svcName)
+			log.Println("WS: In channel deleted:", svcName)
+		}()
+	}
 
 	for {
 		// Read message from component
@@ -67,42 +68,11 @@ func processServiceMessage(msg ServiceMessage, c *websocket.Conn, r *http.Reques
 
 	// Read the header
 	switch msg.Header {
-	case "n":
-		req := reflect.ValueOf(msg.Data)
-		// A channel open request
-		// An unsuccessful channel request will cause the server to close the connection
-		reqName := req.Index(0).Interface().(string)
-		reqSize := int(req.Index(1).Interface().(float64))
-		inChLock.RLock()
-		inChannel := inChMap[reqName]
-		inChLock.RUnlock()
-		if reqName == "" || reqSize <= 0 {
-			// Deny channel request if name is empty or size is negative or zero
-			log.Println("WS: Bad channel request! Invalid arguments:", msg.Data)
-			// XXX: Send a response to service instead of closing connection
-			c.Close()
-		} else if inChannel != nil || getComponentNameCookie(r) != "" {
-			// Deny channel request if named channel already exists, or
-			// the connection has already registered a name
-			log.Println("WS: Bad channel request! Name already exists:", msg.Data)
-			// XXX: Send a response to service instead of closing connection
-			c.Close()
-		} else {
-			// Set component name, and make a new channel for this component
-			setComponentNameCookie(reqName, r)
-			newChannel := make(chan *ClientMessage, reqSize)
-			inChLock.Lock()
-			inChMap[reqName] = newChannel
-			inChLock.Unlock()
-			// Start a goroutine to listen on this channel and deliver inputs, until channel closes
-			go deliverInputsRoutine(newChannel, c)
-			log.Println("WS: Component requested input channel:", msg.Data)
-		}
-
 	case "c":
 		// A cache request
+		// TODO: not implemented
 
-	case "r":
+	case "r", "":
 		// A return value
 		uid, _ := uuid.FromString(msg.UID)
 		retMsg := msg.GetProcedureReturn()
@@ -139,22 +109,34 @@ func deliverInputsRoutine(inChannel chan *ClientMessage, c *websocket.Conn) {
 	}
 }
 
-func setComponentNameCookie(name string, r *http.Request) {
-	cookie, err := r.Cookie("svcName")
-	if err != nil {
-		// Svc name cookie does not exist
-		ck := http.Cookie{Name: "svcName", Value: name}
-		r.AddCookie(&ck)
-	} else {
-		// Cookie does exist: overwrite it
-		cookie.Value = name
-	}
-}
-
 func getComponentNameCookie(r *http.Request) string {
 	cookie, err := r.Cookie("svcName")
 	if err != nil {
 		return ""
 	}
 	return cookie.Value
+}
+
+func createInChannel(reqName string) chan *ClientMessage {
+	// XXX: Allow service to define the size of the channel
+	reqSize := 50
+	inChLock.RLock()
+	inChannel := inChMap[reqName]
+	inChLock.RUnlock()
+	if reqName == "" || reqSize <= 0 {
+		// Deny channel request if name is empty or size is negative or zero
+		log.Println("WS: Bad channel request! Invalid arguments:", reqName, reqSize)
+		return nil
+	} else if inChannel != nil {
+		// Deny channel request if named channel already exists
+		log.Println("WS: Bad channel request! Name already exists:", reqName, reqSize)
+		return nil
+	} else {
+		newChannel := make(chan *ClientMessage, reqSize)
+		inChLock.Lock()
+		inChMap[reqName] = newChannel
+		inChLock.Unlock()
+		log.Println("WS: Created input channel:", reqName, reqSize)
+		return newChannel
+	}
 }

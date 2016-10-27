@@ -51,7 +51,6 @@
   <ItemGroup>
     <Compile Include="BuiltinPlugins\Echo.cs" />
     <Compile Include="ConnectionState.cs" />
-    <Compile Include="Messages\Outputs\ChannelRequest.cs" />
     <Compile Include="Messages\Outputs\SetCacheRequest.cs" />
     <Compile Include="Messages\Outputs\WebReturn.cs" />
     <Compile Include="Plugins\Plugin.cs" />

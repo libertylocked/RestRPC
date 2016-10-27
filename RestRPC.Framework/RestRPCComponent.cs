@@ -7,6 +7,7 @@ using RestRPC.Framework.Messages.Outputs;
 using RestRPC.Framework.Plugins;
 using RestRPC.Framework.Serialization;
 using WebSocketSharp;
+using WebSocketSharp.Net;
 
 namespace RestRPC.Framework
 {
@@ -137,6 +138,8 @@ namespace RestRPC.Framework
         {
             if (!IsRunning)
             {
+                // Set "svcName" cookie so the server knows who we are
+                ws.SetCookie(new Cookie("svcName", Name));
                 IsRunning = true;
             }
         }
@@ -258,8 +261,6 @@ namespace RestRPC.Framework
 
         private void WS_OnOpen(object sender, EventArgs e)
         {
-            // Component requests the server to create a channel for this component
-            ws.SendAsync(JsonConvert.SerializeObject(new ChannelRequest(Name, CHANNEL_SIZE)), null);
             ConnectionState = ConnectionState.Connected;
             Logger.Log("WebSocket connection established: " + ws.Url, LogType.Info);
         }
