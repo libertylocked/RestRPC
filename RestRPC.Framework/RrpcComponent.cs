@@ -14,16 +14,17 @@ namespace RestRPC.Framework
     /// <summary>
     /// RestRPCComponent communicates with an RRPC server and handles in/out messages
     /// </summary>
-    public class RestRPCComponent
+    public class RrpcComponent
     {
         const int CHANNEL_SIZE = 50;
 
         WebSocket ws;
         DateTime lastPollTime = DateTime.Now;
 
-        ConcurrentQueue<WebInput> inputQueue = new ConcurrentQueue<WebInput>();
-        ConcurrentQueue<WebOutput> outputQueue = new ConcurrentQueue<WebOutput>();
+        ConcurrentQueue<InMessage> inQueue = new ConcurrentQueue<InMessage>();
+        ConcurrentQueue<OutMessage> outQueue = new ConcurrentQueue<OutMessage>();
 
+        InMessageSerializer inMessageSerializer = new InMessageSerializer();
         JsonSerializerSettings outSerializerSettings = new JsonSerializerSettings
         {
             ContractResolver = new WritablePropertiesOnlyResolver(),
@@ -92,7 +93,7 @@ namespace RestRPC.Framework
         /// <param name="pollingRate">Rate to poll messages from server</param>
         /// <param name="username">Username for HTTP auth</param>
         /// <param name="password">Password for HTTP auth</param>
-        public RestRPCComponent(string componentName, Uri remoteUri, TimeSpan pollingRate, 
+        public RrpcComponent(string componentName, Uri remoteUri, TimeSpan pollingRate, 
             string username, string password)
         : this(componentName, remoteUri, pollingRate, username, password, null, LogType.None)
         { }
@@ -107,7 +108,7 @@ namespace RestRPC.Framework
         /// <param name="password">Password for HTTP auth</param>
         /// <param name="logWriter">Log writer</param>
         /// <param name="logLevel">Level of logging</param>
-        public RestRPCComponent(string componentName, Uri remoteUri, TimeSpan pollingRate, 
+        public RrpcComponent(string componentName, Uri remoteUri, TimeSpan pollingRate, 
             string username, string password, TextWriter logWriter, LogType logLevel)
         {
             this.Name = componentName;
@@ -138,7 +139,7 @@ namespace RestRPC.Framework
         {
             if (!IsRunning)
             {
-                // Set "svcName" cookie so the server knows who we are
+                // XXX: Set "svcName" cookie so the server knows who we are
                 ws.SetCookie(new Cookie("svcName", Name));
                 IsRunning = true;
             }
@@ -153,8 +154,8 @@ namespace RestRPC.Framework
             if (IsRunning)
             {
                 // Clear queues
-                inputQueue = new ConcurrentQueue<WebInput>();
-                outputQueue = new ConcurrentQueue<WebOutput>();
+                inQueue = new ConcurrentQueue<InMessage>();
+                outQueue = new ConcurrentQueue<OutMessage>();
 
                 IsRunning = false;
             }
@@ -173,6 +174,11 @@ namespace RestRPC.Framework
 
             // Send messages over websocket
             NetworkUpdate();
+        }
+
+        internal void EnqueueOutMessage(OutMessage outMessage)
+        {
+            outQueue.Enqueue(outMessage);
         }
 
         private void NetworkUpdate()
@@ -204,19 +210,13 @@ namespace RestRPC.Framework
 
         private void ProcessInputMessages()
         {
-            WebInput input;
-            while (inputQueue.TryDequeue(out input))
+            InMessage inMsg;
+            while (inQueue.TryDequeue(out inMsg))
             {
                 try
                 {
                     // Process this message
-                    Logger.Log("Executing " + input.ToString(), LogType.Debug);
-                    object retVal = PluginManager.Dispatch(input.Cmd, input.Args);
-                    // Only return real values. Do not return NoOutput messages
-                    if (retVal == null || retVal.GetType() != typeof(NoOutput))
-                    {
-                        outputQueue.Enqueue(new WebReturn(retVal, input));
-                    }
+                    inMsg.Evaluate(this);
                 }
                 catch (Exception ex)
                 {
@@ -234,13 +234,13 @@ namespace RestRPC.Framework
             }
 
             // Send output data
-            WebOutput output;
-            while (outputQueue.TryDequeue(out output))
+            OutMessage outMsg;
+            while (outQueue.TryDequeue(out outMsg))
             {
                 // Serialize the object to JSON then send back to server.
                 try
                 {
-                    ws.SendAsync(JsonConvert.SerializeObject(output, outSerializerSettings), null);
+                    ws.SendAsync(JsonConvert.SerializeObject(outMsg, outSerializerSettings), null);
                 }
                 catch (Exception sendExc)
                 {
@@ -252,10 +252,19 @@ namespace RestRPC.Framework
         private void WS_OnMessage(object sender, MessageEventArgs e)
         {
             if (string.IsNullOrWhiteSpace(e.Data)) return;
-            WebInput input = JsonConvert.DeserializeObject<WebInput>(e.Data);
-            if (input != null)
+
+            try
             {
-                inputQueue.Enqueue(input);
+                InMessage inMsg = JsonConvert.DeserializeObject<InMessage>(e.Data, inMessageSerializer);
+                if (inMsg != null)
+                {
+                    inQueue.Enqueue(inMsg);
+                }
+            }
+            catch (Exception exc)
+            {
+                Logger.Log("Error parsing InMessage: " + e.Data + ": " + exc.ToString(), LogType.Error);
+                // TODO: Compose and enqueue an error out message
             }
         }
 

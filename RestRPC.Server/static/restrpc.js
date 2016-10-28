@@ -1,5 +1,5 @@
-function sendInput(targetComponent, cmd, args, callback, errorCallback) {
-  var stringified = JSON.stringify({ "Target": targetComponent, "Cmd": cmd, "Args": args });
+function sendInput(tid, method, params, id, callback, errorCallback) {
+  var stringified = JSON.stringify({ "TID": tid, "Method": method, "Params": params, "ID": id });
   console.log(stringified);
   $.ajax({
     url: '/input',

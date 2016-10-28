@@ -10,7 +10,7 @@ namespace RestRPC.Service
 {
     class Program
     {
-        static RestRPCComponent wshComponent;
+        static RrpcComponent wshComponent;
 
         static void Main(string[] args)
         {
@@ -28,11 +28,12 @@ namespace RestRPC.Service
                 return;
             }
 
-            wshComponent = new RestRPCComponent(componentName, remoteUri, TimeSpan.FromMilliseconds(30), 
+            wshComponent = new RrpcComponent(componentName, remoteUri, TimeSpan.FromMilliseconds(30), 
                 options.Username, options.Password, Console.Out, LogType.All);
             // Register custom plugins and procedures
             wshComponent.PluginManager.RegisterPlugin("print", new PrintToScreen());
             wshComponent.PluginManager.RegisterProcedure("osversion", (inputArgs) => { return Environment.OSVersion.VersionString; });
+            wshComponent.PluginManager.RegisterProcedure("invalidop", (inputArgs) => { throw new InvalidOperationException("This exception is a test!"); });
             // Load plugins in plugins directory if dir exists
             if (Directory.Exists("plugins"))
             {

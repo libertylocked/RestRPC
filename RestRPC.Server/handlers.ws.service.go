@@ -25,17 +25,19 @@ func handleComponentWS(w http.ResponseWriter, r *http.Request) {
 
 	// Create a channel for the service
 	svcName := getComponentNameCookie(r)
-	newChan := createInChannel(svcName)
+	newChan := createReqChannel(svcName)
 	if newChan == nil {
 		// XXX: Close connection if channel creation failed. Should respond with an error message
 		c.Close()
 	} else {
 		// If channel is successfully created, start input delivery routine
-		go deliverInputsRoutine(newChan, c)
+		go deliverRequestRoutine(newChan, c)
 		defer func() {
 			// Close the channel and remove from in channel map
 			close(newChan)
-			delete(inChMap, svcName)
+			reqChLock.Lock()
+			delete(reqChMap, svcName)
+			reqChLock.Unlock()
 			log.Println("WS: In channel deleted:", svcName)
 		}()
 	}
@@ -48,7 +50,7 @@ func handleComponentWS(w http.ResponseWriter, r *http.Request) {
 			log.Println("WS:", err)
 			break
 		}
-		var msg ServiceMessage
+		var msg OutMessage
 		err = json.Unmarshal(data, &msg)
 		if err != nil {
 			log.Println("WS: Error unmarshalling message!", err, string(data))
@@ -58,7 +60,7 @@ func handleComponentWS(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func processServiceMessage(msg ServiceMessage, c *websocket.Conn, r *http.Request) {
+func processServiceMessage(msg OutMessage, c *websocket.Conn, r *http.Request) {
 	defer func() {
 		if rec := recover(); rec != nil {
 			log.Println("WS: Error processing service message:", msg, rec)
@@ -68,20 +70,27 @@ func processServiceMessage(msg ServiceMessage, c *websocket.Conn, r *http.Reques
 
 	// Read the header
 	switch msg.Header {
-	case "c":
+	case HeaderCacheRequest:
 		// A cache request
 		// TODO: not implemented
 
-	case "r", "":
-		// A return value
-		uid, _ := uuid.FromString(msg.UID)
-		retMsg := msg.GetProcedureReturn()
+	case HeaderResponse:
+		// A response object
+		// XXX: Super hacky! Write a proper decoder
+		var responseObject ResponseObject
+		dataMar, _ := json.Marshal(msg.Data)
+		json.Unmarshal(dataMar, &responseObject)
+
+		// Clear RID from the response object before enqueuing
+		rid, _ := uuid.FromString(responseObject.RID)
+		responseObject.RID = ""
+
 		retChLock.RLock()
-		retChannel := retChMap[uid]
+		retChannel := retChMap[rid]
 		retChLock.RUnlock()
 		select {
-		case retChannel <- retMsg:
-			log.Println("WS: Returned output for:", uid)
+		case retChannel <- &responseObject:
+			log.Println("WS: Returned output for:", rid)
 		default:
 			// Fails if either the return channel is full, or the return channel has been deleted
 			log.Println("WS: Return channel unavailable. Discarding:", msg)
@@ -92,16 +101,18 @@ func processServiceMessage(msg ServiceMessage, c *websocket.Conn, r *http.Reques
 	}
 }
 
-// A routine to continue deliver input messages to service until channel is closed
-func deliverInputsRoutine(inChannel chan *ClientMessage, c *websocket.Conn) {
+// A routine to continue deliver request messages to service until channel is closed
+func deliverRequestRoutine(reqChannel chan *RequestObject, c *websocket.Conn) {
 	for {
-		input, ok := <-inChannel
+		requestObject, ok := <-reqChannel
 		if ok {
-			errWrite := c.WriteJSON(input)
+			// Wrap the request object in an InMessage
+			inMsg := InMessage{"", requestObject}
+			errWrite := c.WriteJSON(inMsg)
 			if errWrite != nil {
 				log.Println("WS:", errWrite)
 			}
-			log.Println("WS: Dequeued:", input.UID)
+			log.Println("WS: Dequeued:", requestObject.RID)
 		} else {
 			log.Println("WS: Input channel closed!")
 			break
@@ -117,26 +128,26 @@ func getComponentNameCookie(r *http.Request) string {
 	return cookie.Value
 }
 
-func createInChannel(reqName string) chan *ClientMessage {
+func createReqChannel(svcName string) chan *RequestObject {
 	// XXX: Allow service to define the size of the channel
-	reqSize := 50
-	inChLock.RLock()
-	inChannel := inChMap[reqName]
-	inChLock.RUnlock()
-	if reqName == "" || reqSize <= 0 {
+	qSize := 50
+	reqChLock.RLock()
+	reqChannel := reqChMap[svcName]
+	reqChLock.RUnlock()
+	if svcName == "" || qSize <= 0 {
 		// Deny channel request if name is empty or size is negative or zero
-		log.Println("WS: Bad channel request! Invalid arguments:", reqName, reqSize)
+		log.Println("WS: Bad channel request! Invalid arguments:", svcName, qSize)
 		return nil
-	} else if inChannel != nil {
+	} else if reqChannel != nil {
 		// Deny channel request if named channel already exists
-		log.Println("WS: Bad channel request! Name already exists:", reqName, reqSize)
+		log.Println("WS: Bad channel request! Name already exists:", svcName, qSize)
 		return nil
 	} else {
-		newChannel := make(chan *ClientMessage, reqSize)
-		inChLock.Lock()
-		inChMap[reqName] = newChannel
-		inChLock.Unlock()
-		log.Println("WS: Created input channel:", reqName, reqSize)
+		newChannel := make(chan *RequestObject, qSize)
+		reqChLock.Lock()
+		reqChMap[svcName] = newChannel
+		reqChLock.Unlock()
+		log.Println("WS: Created input channel:", svcName, qSize)
 		return newChannel
 	}
 }

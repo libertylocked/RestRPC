@@ -13,11 +13,11 @@ import (
 func handleStatusGet(w http.ResponseWriter, r *http.Request) {
 	// Lists all the components connected and their remote endpoints
 	componentList := []string{}
-	inChLock.RLock()
-	for k := range inChMap {
+	reqChLock.RLock()
+	for k := range reqChMap {
 		componentList = append(componentList, k)
 	}
-	inChLock.RUnlock()
+	reqChLock.RUnlock()
 	jsonOutput, err := json.Marshal(componentList)
 	if err != nil {
 		http.Error(w, http.StatusText(500), 500)
@@ -28,34 +28,40 @@ func handleStatusGet(w http.ResponseWriter, r *http.Request) {
 func handleInputPost(w http.ResponseWriter, r *http.Request) {
 	// REST client sends input to game via POST
 	decoder := json.NewDecoder(r.Body)
-	var input ClientMessage
-	err := decoder.Decode(&input)
+	var reqObject RequestObject
+	err := decoder.Decode(&reqObject)
 	if err != nil {
 		log.Println("POST: Error decoding input:", err)
 		return
 	}
-	// Attach a UUID to the request input
-	input.UID = uuid.NewV4()
-	// Get the target of the request, then clear it from the input so we don't send it to component
-	targetID := input.Target
-	input.Target = ""
+	requesterID := uuid.NewV4()
+	// Attach requester ID
+	reqObject.RID = requesterID.String()
+	// Clear the TID before enqueuing
+	targetID := reqObject.TID
+	reqObject.TID = ""
 
-	inChLock.RLock()
-	inChannel := inChMap[targetID]
-	inChLock.RUnlock()
+	reqChLock.RLock()
+	reqChannel := reqChMap[targetID]
+	reqChLock.RUnlock()
 
 	select {
-	case inChannel <- &input:
-		log.Println("POST: Sent:", input)
-		// Make a channel and wait for the return value for this input
-		retChannel := make(chan *ProcedureReturn, 1)
+	case reqChannel <- &reqObject:
+		log.Println("POST: Sent:", reqObject)
+		// If ID is null or empty, it's a notification - don't need to return anything
+		if reqObject.ID == "" {
+			w.WriteHeader(http.StatusAccepted)
+			return
+		}
+		// If ID is not empty, create a return channel and wait for response
+		retChannel := make(chan *ResponseObject, 1)
 		retChLock.Lock()
-		retChMap[input.UID] = retChannel
+		retChMap[requesterID] = retChannel
 		retChLock.Unlock()
 		defer func() {
+			close(retChannel)
 			retChLock.Lock()
-			close(retChMap[input.UID])
-			delete(retChMap, input.UID)
+			delete(retChMap, requesterID)
 			retChLock.Unlock()
 		}()
 		timeout := make(chan bool, 1)
@@ -65,26 +71,29 @@ func handleInputPost(w http.ResponseWriter, r *http.Request) {
 		}()
 		// Now we wait till the component sends the return value back, or it times out
 		select {
-		case retMessage := <-retChannel:
+		case responseObject := <-retChannel:
 			// A return message has arrived!
 			// Only need the data portion for POST. CID is only used for requesters on WS
-			seralizedRet, err := json.Marshal(retMessage.Data)
+			seralizedRet, err := json.Marshal(responseObject)
 			if err != nil {
 				log.Println("POST: Error marshalling return data:", err)
 			} else {
 				// Return value successfully retrieved
 				log.Println("POST: Returned:", string(seralizedRet))
 				w.Write(seralizedRet)
+				return
 			}
 		case <-timeout:
 			// Return value did not arrive in time
-			log.Println("POST: Return timeout:", input.UID)
-			http.Error(w, http.StatusText(504), 504)
+			log.Println("POST: Return timeout:", requesterID)
+			http.Error(w, http.StatusText(http.StatusGatewayTimeout), http.StatusGatewayTimeout)
+			return
 		}
 	default:
 		// Fails to POST the input because component's chan is full, or its channel does not exist
-		log.Println("POST: Input channel unavailable. Discarding:", input)
-		http.Error(w, http.StatusText(502), 502)
+		log.Println("POST: Input channel unavailable. Discarding:", reqObject)
+		http.Error(w, http.StatusText(http.StatusBadGateway), http.StatusBadGateway)
+		return
 	}
 }
 

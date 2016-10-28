@@ -51,8 +51,17 @@
   <ItemGroup>
     <Compile Include="BuiltinPlugins\Echo.cs" />
     <Compile Include="ConnectionState.cs" />
-    <Compile Include="Messages\Outputs\SetCacheRequest.cs" />
-    <Compile Include="Messages\Outputs\WebReturn.cs" />
+    <Compile Include="Exceptions\ErrorCode.cs" />
+    <Compile Include="Exceptions\InternalErrorException.cs" />
+    <Compile Include="Exceptions\RrpcException.cs" />
+    <Compile Include="Messages\Inputs\RequestObject.cs" />
+    <Compile Include="Messages\Inputs\InMessage.cs" />
+    <Compile Include="Messages\Outputs\ErrorObject.cs" />
+    <Compile Include="Messages\Outputs\OutMessage.cs" />
+    <Compile Include="Messages\Outputs\ResponseObject.cs" />
+    <Compile Include="Messages\Outputs\RrpcResponse.cs" />
+    <Compile Include="Messages\Message.cs" />
+    <Compile Include="Exceptions\MethodNotFoundException.cs" />
     <Compile Include="Plugins\Plugin.cs" />
     <Compile Include="Plugins\PluginLoader.cs" />
     <Compile Include="Plugins\PluginManager.cs" />
@@ -60,13 +69,12 @@
     <Compile Include="Plugins\IUpdate.cs" />
     <Compile Include="LogType.cs" />
     <Compile Include="Logger.cs" />
-    <Compile Include="Messages\Outputs\NoOutput.cs" />
-    <Compile Include="Messages\Outputs\WebOutput.cs" />
     <Compile Include="Plugins\Procedure.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="Serialization\InMessageConverter.cs" />
     <Compile Include="Serialization\WritablePropertiesOnlyResolver.cs" />
-    <Compile Include="Messages\Inputs\WebInput.cs" />
-    <Compile Include="RestRPCComponent.cs" />
+    <Compile Include="Messages\Inputs\RrpcInput.cs" />
+    <Compile Include="RrpcComponent.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="packages.config" />

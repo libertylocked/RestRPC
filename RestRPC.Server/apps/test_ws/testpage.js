@@ -44,7 +44,7 @@ function sendInputClick() {
   }
   var cid = $("#cid").val()
   // Stringify the object then send on WS
-  var stringified = JSON.stringify({ "Target": targetComponent, "Cmd": cmd, "Args": args, "CID": cid });
+  var stringified = JSON.stringify({ "TID": targetComponent, "Method": cmd, "Params": args, "ID": cid });
   console.log("Sending: ", stringified);
   ws.send(stringified);
 }

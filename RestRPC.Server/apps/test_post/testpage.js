@@ -47,12 +47,22 @@ function sendInputClick() {
     }
     args.push(aData);
   }
+  var isNotification = $("#useNotification").is(":checked");
+
   // Finally compose a request and send to server
-  sendInput(targetComponent, cmd, args, function(data) {
-    $("#sendResultTitle").text("Sent");
-    $("#sendResultBody").text(data);
-  }, function(jqXHR, textStatus, errorThrown) {
-    $("#sendResultTitle").text("Error");
-    $("#sendResultBody").text(errorThrown.stack);
-  });
+  if (!isNotification) {
+    // "0" is just an arbitrary ID
+    sendInput(targetComponent, cmd, args, "0", function(data) {
+      $("#sendResultTitle").text("Sent");
+      $("#sendResultBody").text(data);
+    }, function(jqXHR, textStatus, errorThrown) {
+      $("#sendResultTitle").text("Error");
+      $("#sendResultBody").text(errorThrown.stack);
+    });
+  } else {
+    // Client will not receive response for a notification
+    sendInput(targetComponent, cmd, args, null, null);
+    $("#sendResultTitle").text("Notification is sent");
+    $("#sendResultBody").text("");
+  }
 }

@@ -38,12 +38,12 @@
   }
   
   function serviceOnClick(name) {
-    sendInput(name, "pluginlist", null, function(data){
+    sendInput(name, "pluginlist", null, null, function(data){
       $("#svc_"+name).popover({
         "html": true,
         "placement": "bottom",
         "title": "Plugins on " + name,
-        "content": JSON.parse(data).join("<br>"),
+        "content": JSON.parse(data)["Result"].join("<br>"),
         "trigger": "hover"
         }).popover('show');
     }, function(jqXHR, textStatus, errorThrown) {

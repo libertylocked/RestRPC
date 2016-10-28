@@ -1,5 +1,5 @@
 ﻿using RestRPC.Framework.BuiltinPlugins;
-using RestRPC.Framework.Messages.Outputs;
+using RestRPC.Framework.Exceptions;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -76,8 +76,8 @@ namespace RestRPC.Framework.Plugins
             }
             else
             {
-                // Plugin not found - return nothing
-                return new NoOutput();
+                // Procedure not found
+                throw new MethodNotFoundException(procedureID);
             }
         }
 

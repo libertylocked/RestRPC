@@ -26,7 +26,7 @@ func handleClientWS(w http.ResponseWriter, r *http.Request) {
 	// Create a return channel for this client
 	// XXX: Hard code return channel size 50: if more than 50 outputs are received before dequeued to client,
 	// outputs will be discarded
-	retChannel := make(chan *ProcedureReturn, 50)
+	retChannel := make(chan *ResponseObject, 50)
 	retChLock.Lock()
 	retChMap[clientUID] = retChannel
 	retChLock.Unlock()
@@ -42,7 +42,7 @@ func handleClientWS(w http.ResponseWriter, r *http.Request) {
 	}()
 
 	// Start the output routine: listen on the return channel and send to client when outputs are received
-	go deliverOutputsRoutine(retChannel, c)
+	go deliverResponseRoutine(retChannel, c)
 
 	for {
 		// Read input message from client
@@ -51,38 +51,38 @@ func handleClientWS(w http.ResponseWriter, r *http.Request) {
 			log.Println("CWS:", err)
 			break
 		}
-		var input ClientMessage
-		err = json.Unmarshal(data, &input)
+		var reqObject RequestObject
+		err = json.Unmarshal(data, &reqObject)
 		if err != nil {
 			log.Println("CWS: Error unmarshalling message!", err, string(data))
 		}
 
 		// Attach requester's UID to the request input
-		input.UID = clientUID
-		// Get the target of the request, then clear it from the input so we don't send it to component
-		targetID := input.Target
-		input.Target = ""
+		reqObject.RID = clientUID.String()
+		// Clear the TID before enqueuing
+		targetID := reqObject.TID
+		reqObject.TID = ""
 
-		inChLock.RLock()
-		inChannel := inChMap[targetID]
-		inChLock.RUnlock()
+		reqChLock.RLock()
+		reqChannel := reqChMap[targetID]
+		reqChLock.RUnlock()
 		select {
-		case inChannel <- &input:
-			log.Println("WSC: Sent:", input)
+		case reqChannel <- &reqObject:
+			log.Println("WSC: Sent:", reqObject)
 		default:
 			// Fails to send the input because component's chan is full, or its channel does not exist
-			log.Println("CWS: Input channel unavailable. Discarding:", input)
+			log.Println("CWS: Input channel unavailable. Discarding:", reqObject)
 			// TODO: Server respond with an error message
 		}
 
 	}
 }
 
-func deliverOutputsRoutine(retChannel chan *ProcedureReturn, c *websocket.Conn) {
+func deliverResponseRoutine(retChannel chan *ResponseObject, c *websocket.Conn) {
 	for {
 		retMsg, ok := <-retChannel
 		if ok {
-			// A return message has arrived!
+			// A response object has arrived for this requester!
 			errWrite := c.WriteJSON(retMsg)
 			if errWrite != nil {
 				log.Println("CWS:", errWrite)
