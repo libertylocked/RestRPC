@@ -4,7 +4,7 @@ type RequestObject struct {
 	Method string
 	Params []interface{}
 	ID     string
-	// This field is omitted when sending to RPC service. Omit before enqueuing
+	// This field is omitted when sending to RPC service
 	TID string `json:",omitempty"`
 	// This field is set by server
 	RID string
@@ -12,14 +12,14 @@ type RequestObject struct {
 
 type ResponseObject struct {
 	Result interface{}
-	Error  ErrorObject `json:",omitempty"`
+	Error  *ErrorObject `json:",omitempty"`
 	ID     string
-	// This field is omitted when sending to RPC caller. Omit before enqueuing
+	// This field is omitted when sending to RPC caller
 	RID string `json:",omitempty"`
 }
 
 type ErrorObject struct {
-	Code    int    `json:",omitempty"`
-	Message string `json:",omitempty"`
-	Data    string `json:",omitempty"`
+	Code    int
+	Message string
+	Data    string
 }
