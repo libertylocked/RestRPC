@@ -8,12 +8,14 @@ namespace RestRPC.Framework.Exceptions
         public int Code { get; private set; }
 
         public RrpcException(int code, string message)
-            : base(message)
+            : this(code, message, null)
         { }
 
         public RrpcException(int code, string message, Exception innerException)
             : base(message, innerException)
-        { }
+        {
+            this.Code = code;
+        }
 
         internal ErrorObject ToErrorObject()
         {
