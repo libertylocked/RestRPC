@@ -38,7 +38,7 @@
   }
   
   function serviceOnClick(name) {
-    sendInput(name, "pluginlist", null, null, function(data){
+    sendInput(name, "pluginlist", null, "0", function(data){
       $("#svc_"+name).popover({
         "html": true,
         "placement": "bottom",
