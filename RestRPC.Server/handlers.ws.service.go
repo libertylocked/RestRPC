@@ -50,36 +50,45 @@ func handleComponentWS(w http.ResponseWriter, r *http.Request) {
 			log.Println("WS:", err)
 			break
 		}
-		var msg OutMessage
-		err = json.Unmarshal(data, &msg)
+		//var msg OutMessage
+		var msgObjMap map[string]*json.RawMessage
+		err = json.Unmarshal(data, &msgObjMap)
 		if err != nil {
 			log.Println("WS: Error unmarshalling message!", err, string(data))
 		} else {
-			processServiceMessage(msg, c, r)
+			processServiceMessage(msgObjMap, c, r)
 		}
 	}
 }
 
-func processServiceMessage(msg OutMessage, c *websocket.Conn, r *http.Request) {
+func processServiceMessage(msgObjMap map[string]*json.RawMessage, c *websocket.Conn, r *http.Request) {
 	defer func() {
 		if rec := recover(); rec != nil {
-			log.Println("WS: Error processing service message:", msg, rec)
+			log.Println("WS: Error processing service message:", msgObjMap, rec)
 			return
 		}
 	}()
 
+	// Unmarshal the header
+	var header string
+	err := json.Unmarshal(*msgObjMap["Header"], &header)
+	if err != nil {
+		panic(err)
+	}
+
 	// Read the header
-	switch msg.Header {
+	switch header {
 	case HeaderCacheRequest:
 		// A cache request
 		// TODO: not implemented
 
 	case HeaderResponse:
 		// A response object
-		// XXX: Super hacky! Write a proper decoder
 		var responseObject ResponseObject
-		dataMar, _ := json.Marshal(msg.Data)
-		json.Unmarshal(dataMar, &responseObject)
+		err = json.Unmarshal(*msgObjMap["Data"], &responseObject)
+		if err != nil {
+			panic(err)
+		}
 
 		// Clear RID from the response object before enqueuing
 		rid, _ := uuid.FromString(responseObject.RID)
@@ -93,11 +102,11 @@ func processServiceMessage(msg OutMessage, c *websocket.Conn, r *http.Request) {
 			log.Println("WS: Returned output for:", rid)
 		default:
 			// Fails if either the return channel is full, or the return channel has been deleted
-			log.Println("WS: Return channel unavailable. Discarding:", msg)
+			log.Println("WS: Return channel unavailable. Discarding:", msgObjMap)
 		}
 
 	default:
-		log.Println("WS: Unknown service message format:", msg)
+		log.Println("WS: Unknown service message format:", msgObjMap)
 	}
 }
 
