@@ -73,16 +73,17 @@ func handleInputPost(w http.ResponseWriter, r *http.Request) {
 		select {
 		case responseObject := <-retChannel:
 			// A return message has arrived!
-			// Only need the data portion for POST. CID is only used for requesters on WS
 			seralizedRet, err := json.Marshal(responseObject)
 			if err != nil {
 				log.Println("POST: Error marshalling return data:", err)
-			} else {
-				// Return value successfully retrieved
-				log.Println("POST: Returned:", string(seralizedRet))
-				w.Write(seralizedRet)
+				http.Error(w, http.StatusText(http.StatusBadGateway), http.StatusBadGateway)
 				return
 			}
+			// Return value successfully retrieved
+			log.Println("POST: Returned:", string(seralizedRet))
+			w.Header().Set("Content-Type", "application/json")
+			w.Write(seralizedRet)
+			return
 		case <-timeout:
 			// Return value did not arrive in time
 			log.Println("POST: Return timeout:", requesterID)
