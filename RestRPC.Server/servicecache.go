@@ -1,5 +1,5 @@
 package main
 
-import "github.com/LibertyLocked/cachestore"
+import "./pkg/cachestore"
 
 var serviceCache = cachestore.NewCacheStore()
