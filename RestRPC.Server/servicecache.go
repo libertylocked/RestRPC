@@ -6,4 +6,4 @@ import (
 	"./pkg/cachestore"
 )
 
-var serviceCache = cachestore.ServiceCache{map[string]*cachestore.KVStore{}, sync.RWMutex{}}
+var serviceCache = cachestore.CacheStore{map[string]*cachestore.KVStore{}, sync.RWMutex{}}
