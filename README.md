@@ -6,6 +6,8 @@ There are 3 roles in the RRPC specification:
 - RRPC client (*"requester"*): The requester of a remote procedure. The origin of Request objects and the handler of Response objects.
 - RRPC service (*"responder"*): The origin of Response objects and the handler of Request objects.
 
+[View the RestRPC specification](https://github.com/LibertyLocked/RestRPC/wiki/Specification)
+
 ## Features
 - Client-to-client RPC: Procedures are stored on clients (services) and can be called by other clients (requesters)
 - Modular: RestRPC allows registering procedures on services at runtime
