@@ -2,6 +2,7 @@ package main
 
 import (
 	"encoding/json"
+	"io"
 	"io/ioutil"
 	"log"
 	"net/http"
@@ -23,6 +24,21 @@ func handleStatusGet(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, http.StatusText(500), 500)
 	}
 	w.Write(jsonOutput)
+}
+
+func handleCacheGet(w http.ResponseWriter, r *http.Request) {
+	svc := r.URL.Query().Get("svc")
+	key := r.URL.Query().Get("key")
+	if svc != "" && key != "" {
+		io.WriteString(w, serviceCache.GetCache(svc, key))
+		return
+	}
+
+	// If svc or key is not specified, return the entire cache store as a JSON object
+	// This will RLock all the stores, until stores are serialized and written to requester!
+	serviceCache.Mutex.RLock()
+	json.NewEncoder(w).Encode(serviceCache.Stores)
+	serviceCache.Mutex.RUnlock()
 }
 
 func handleInputPost(w http.ResponseWriter, r *http.Request) {

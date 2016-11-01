@@ -1,5 +1,7 @@
 package main
 
+import "encoding/json"
+
 type RequestObject struct {
 	Method string
 	Params []interface{}
@@ -11,7 +13,7 @@ type RequestObject struct {
 }
 
 type ResponseObject struct {
-	Result interface{}
+	Result *json.RawMessage
 	Error  *ErrorObject `json:",omitempty"`
 	ID     string
 	// This field is omitted when sending to RPC caller
@@ -22,4 +24,9 @@ type ErrorObject struct {
 	Code    int
 	Message string
 	Data    string
+}
+
+type CacheObject struct {
+	Key   string
+	Value *json.RawMessage
 }

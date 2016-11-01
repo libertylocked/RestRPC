@@ -32,6 +32,7 @@ namespace RestRPC.Service
                 options.Username, options.Password, Console.Out, LogType.All);
             // Register custom plugins and procedures
             wshComponent.PluginManager.RegisterPlugin("print", new PrintToScreen());
+            wshComponent.PluginManager.RegisterPlugin("updatecache", new CacheUpdater());
             wshComponent.PluginManager.RegisterProcedure("osversion", (inputArgs) => { return Environment.OSVersion.VersionString; });
             wshComponent.PluginManager.RegisterProcedure("invalidop", (inputArgs) => { throw new InvalidOperationException("This exception is a test!"); });
             // Load plugins in plugins directory if dir exists

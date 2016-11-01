@@ -33,11 +33,14 @@ func handleComponentWS(w http.ResponseWriter, r *http.Request) {
 		// If channel is successfully created, start input delivery routine
 		go deliverRequestRoutine(newChan, c)
 		defer func() {
-			// Close the channel and remove from in channel map
+			// Close the channel
 			close(newChan)
+			// Remove from request channel map
 			reqChLock.Lock()
 			delete(reqChMap, svcName)
 			reqChLock.Unlock()
+			// Remove service's cache store
+			serviceCache.DeleteStore(svcName)
 			log.Println("WS: In channel deleted:", svcName)
 		}()
 	}
@@ -50,18 +53,18 @@ func handleComponentWS(w http.ResponseWriter, r *http.Request) {
 			log.Println("WS:", err)
 			break
 		}
-		//var msg OutMessage
+
 		var msgObjMap map[string]*json.RawMessage
 		err = json.Unmarshal(data, &msgObjMap)
 		if err != nil {
 			log.Println("WS: Error unmarshalling message!", err, string(data))
 		} else {
-			processServiceMessage(msgObjMap, c, r)
+			processServiceMessage(msgObjMap, svcName, c)
 		}
 	}
 }
 
-func processServiceMessage(msgObjMap map[string]*json.RawMessage, c *websocket.Conn, r *http.Request) {
+func processServiceMessage(msgObjMap map[string]*json.RawMessage, svcName string, c *websocket.Conn) {
 	defer func() {
 		if rec := recover(); rec != nil {
 			log.Println("WS: Error processing service message:", msgObjMap, rec)
@@ -80,7 +83,20 @@ func processServiceMessage(msgObjMap map[string]*json.RawMessage, c *websocket.C
 	switch header {
 	case HeaderCacheRequest:
 		// A cache request
-		// TODO: not implemented
+		var cacheObject CacheObject
+		err = json.Unmarshal(*msgObjMap["Data"], &cacheObject)
+		if err != nil {
+			log.Println("WS: Error unmarshalling cache object", err)
+			return
+		}
+		// Serialize the value and put it in the cache store
+		valMar, err := json.Marshal(cacheObject.Value)
+		if err != nil {
+			log.Println("WS: Error marshaling value in cache object", cacheObject, err)
+			return
+		}
+		valMarStr := string(valMar)
+		serviceCache.SetCache(svcName, cacheObject.Key, valMarStr)
 
 	case HeaderResponse:
 		// A response object
@@ -116,7 +132,7 @@ func deliverRequestRoutine(reqChannel chan *RequestObject, c *websocket.Conn) {
 		requestObject, ok := <-reqChannel
 		if ok {
 			// Wrap the request object in an InMessage
-			inMsg := InMessage{"", requestObject}
+			inMsg := Message{"", requestObject}
 			errWrite := c.WriteJSON(inMsg)
 			if errWrite != nil {
 				log.Println("WS:", errWrite)

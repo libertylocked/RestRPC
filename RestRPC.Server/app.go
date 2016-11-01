@@ -29,6 +29,7 @@ func main() {
 func getHandlers() *mux.Router {
 	router := mux.NewRouter()
 	router.HandleFunc("/status", handleStatusGet).Methods("GET")
+	router.HandleFunc("/cache", handleCacheGet).Methods("GET")
 	router.HandleFunc("/input", handleInputPost).Methods("POST")
 	router.HandleFunc("/clientws", handleClientWS)
 	router.HandleFunc("/", handleIndex).Methods("GET")

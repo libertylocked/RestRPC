@@ -128,7 +128,7 @@ namespace RestRPC.Framework
             ws.SetCredentials(username, password, true);
 
             // Create plugin manager instance
-            PluginManager = new PluginManager();
+            PluginManager = new PluginManager(this);
         }
 
         /// <summary>

@@ -5,3 +5,8 @@ const (
 	HeaderResponse     = ""
 	HeaderCacheRequest = "c"
 )
+
+type Message struct {
+	Header string
+	Data   interface{}
+}

@@ -1,5 +1,6 @@
 ﻿using RestRPC.Framework.BuiltinPlugins;
 using RestRPC.Framework.Exceptions;
+using RestRPC.Framework.Messages.Outputs;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -14,6 +15,12 @@ namespace RestRPC.Framework.Plugins
         Dictionary<string, Procedure> procedureMap = new Dictionary<string, Procedure>();
         HashSet<Plugin> tickablePlugins = new HashSet<Plugin>();
         List<Plugin> offendingPlugins = new List<Plugin>();
+
+        internal RrpcComponent RrpcComponent
+        {
+            get;
+            private set;
+        }
 
         /// <summary>
         /// Gets the ID of procedures registered in this plugin manager
@@ -34,8 +41,9 @@ namespace RestRPC.Framework.Plugins
         /// <summary>
         /// Constructor
         /// </summary>
-        public PluginManager()
+        public PluginManager(RrpcComponent component)
         {
+            this.RrpcComponent = component;
             Logger.Log("Plugin manager instantiated", LogType.Info);
             // Register built-in plugins
             RegisterPlugin("pluginlist", new PluginList());
@@ -83,10 +91,11 @@ namespace RestRPC.Framework.Plugins
 
         internal void SetCache(string key, object value)
         {
-            //WebOutput cacheRequestMessage = new SetCacheRequest(key, value);
-
-            // TODO: This message needs to be added to the output message queue
-            throw new NotImplementedException();
+            var cacheUpdateMsg = new CacheUpdateMessage(new CacheObject(key, value));
+            if (RrpcComponent.ConnectionState == ConnectionState.Connected)
+            {
+                RrpcComponent.EnqueueOutMessage(cacheUpdateMsg);
+            }
         }
 
         /// <summary>

@@ -21,7 +21,7 @@ namespace RestRPC.Framework.Serialization
             switch (header)
             {
                 case "":
-                    inMsg = new RrpcInput(jObject["Data"].ToObject<RequestObject>());
+                    inMsg = new RpcRequestMessage(jObject["Data"].ToObject<RequestObject>());
                 break;
 
                 default:

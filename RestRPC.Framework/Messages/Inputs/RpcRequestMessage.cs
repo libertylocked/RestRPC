@@ -5,10 +5,10 @@ using System;
 
 namespace RestRPC.Framework.Messages.Inputs
 {
-    class RrpcInput : InMessage
+    class RpcRequestMessage : InMessage
     {
         [JsonConstructor]
-        public RrpcInput(RequestObject RequestObject)
+        public RpcRequestMessage(RequestObject RequestObject)
             : base("", RequestObject)
         { }
 
@@ -46,7 +46,7 @@ namespace RestRPC.Framework.Messages.Inputs
             // Otherwise, return the procedure result
             if (!string.IsNullOrEmpty(requestObject.ID))
             {
-                var responseMessage = new RrpcResponse(new ResponseObject(retVal, exception?.ToErrorObject(), requestObject));
+                var responseMessage = new RpcResponseMessage(new ResponseObject(retVal, exception?.ToErrorObject(), requestObject));
                 component.EnqueueOutMessage(responseMessage);
             }
         }
