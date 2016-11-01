@@ -30,7 +30,7 @@ func handleCacheGet(w http.ResponseWriter, r *http.Request) {
 	svc := r.URL.Query().Get("svc")
 	key := r.URL.Query().Get("key")
 	if svc != "" && key != "" {
-		io.WriteString(w, serviceCache.GetCache(svc, key))
+		io.WriteString(w, serviceCache.GetCache(svc, key).(string))
 		return
 	}
 
