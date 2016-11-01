@@ -31,11 +31,8 @@ func TestCreateStore(t *testing.T) {
 	if store == nil {
 		t.Error("KVStore returned is nil")
 	}
-	if cache.Stores["foo"] == nil {
+	if cache.GetStore("foo") == nil {
 		t.Error("KVStore is nil")
-	}
-	if cache.Stores["foo"].Map == nil {
-		t.Error("KVStore Map is nil")
 	}
 }
 

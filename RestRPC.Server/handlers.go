@@ -36,9 +36,11 @@ func handleCacheGet(w http.ResponseWriter, r *http.Request) {
 
 	// If svc or key is not specified, return the entire cache store as a JSON object
 	// This will RLock all the stores, until stores are serialized and written to requester!
-	serviceCache.Mutex.RLock()
-	json.NewEncoder(w).Encode(serviceCache.Stores)
-	serviceCache.Mutex.RUnlock()
+	cacheMarshalled, err := json.Marshal(serviceCache)
+	if err != nil {
+		log.Println("Error marshalling cache", err)
+	}
+	w.Write(cacheMarshalled)
 }
 
 func handleInputPost(w http.ResponseWriter, r *http.Request) {

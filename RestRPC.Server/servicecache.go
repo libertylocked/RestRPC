@@ -1,9 +1,5 @@
 package main
 
-import (
-	"sync"
+import "./pkg/cachestore"
 
-	"./pkg/cachestore"
-)
-
-var serviceCache = cachestore.CacheStore{map[string]*cachestore.KVStore{}, sync.RWMutex{}}
+var serviceCache = cachestore.NewCacheStore()

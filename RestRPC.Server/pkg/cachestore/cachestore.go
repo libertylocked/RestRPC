@@ -22,20 +22,23 @@ SOFTWARE.
 
 package cachestore
 
-import "sync"
+import (
+	"encoding/json"
+	"sync"
+)
 
 // CacheStore represents a collection of KV stores, one for each service
 type CacheStore struct {
-	Stores map[string]*KVStore
-	Mutex  sync.RWMutex `json:"-"`
+	stores map[string]*KVStore
+	mutex  sync.RWMutex
 }
 
 // GetStore gets the KV cache store for the service
 // Returns nil if store does not exist
 func (c *CacheStore) GetStore(svcName string) *KVStore {
-	c.Mutex.RLock()
-	kvstore := c.Stores[svcName]
-	c.Mutex.RUnlock()
+	c.mutex.RLock()
+	kvstore := c.stores[svcName]
+	c.mutex.RUnlock()
 
 	return kvstore
 }
@@ -44,18 +47,18 @@ func (c *CacheStore) GetStore(svcName string) *KVStore {
 // Returns the created store
 func (c *CacheStore) CreateStore(svcName string) *KVStore {
 	kvstore := &KVStore{map[string]string{}, sync.RWMutex{}}
-	c.Mutex.Lock()
-	c.Stores[svcName] = kvstore
-	c.Mutex.Unlock()
+	c.mutex.Lock()
+	c.stores[svcName] = kvstore
+	c.mutex.Unlock()
 
 	return kvstore
 }
 
 // DeleteStore deletes the KV store for a service. Does nothing if store does not exist
 func (c *CacheStore) DeleteStore(svcName string) {
-	c.Mutex.Lock()
-	delete(c.Stores, svcName)
-	c.Mutex.Unlock()
+	c.mutex.Lock()
+	delete(c.stores, svcName)
+	c.mutex.Unlock()
 }
 
 // SetCache sets a KV pair in a service's KV store. Creates the store if not exists
@@ -76,6 +79,14 @@ func (c *CacheStore) GetCache(svcName string, key string) string {
 		return ""
 	}
 	return svcStore.Get(key)
+}
+
+// MarshalJSON marshals a CacheStore as a JSON object
+func (c *CacheStore) MarshalJSON() ([]byte, error) {
+	c.mutex.RLock()
+	bytes, err := json.Marshal(&c.stores)
+	c.mutex.RUnlock()
+	return bytes, err
 }
 
 // NewCacheStore creates a new CacheStore

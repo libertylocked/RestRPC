@@ -22,30 +22,41 @@ SOFTWARE.
 
 package cachestore
 
-import "sync"
+import (
+	"encoding/json"
+	"sync"
+)
 
 // KVStore represents a KV store for a service
 // Its Get() and Set() guarantee thread safety
 type KVStore struct {
 	// The KV store. Value is expected to be JSON serialized
-	Map map[string]string
+	storeMap map[string]string
 	// The lock for this particular KV store
-	Mutex sync.RWMutex `json:"-"`
+	mutex sync.RWMutex
 }
 
 // Set sets a KV pair in the store
 func (store *KVStore) Set(key string, value string) {
-	store.Mutex.Lock()
-	store.Map[key] = value
-	store.Mutex.Unlock()
+	store.mutex.Lock()
+	store.storeMap[key] = value
+	store.mutex.Unlock()
 }
 
 // Get gets the value associated with the key
 func (store *KVStore) Get(key string) string {
-	store.Mutex.RLock()
-	val := store.Map[key]
-	store.Mutex.RUnlock()
+	store.mutex.RLock()
+	val := store.storeMap[key]
+	store.mutex.RUnlock()
 	return val
+}
+
+// MarshalJSON marshals a KVStore to a JSON object
+func (store *KVStore) MarshalJSON() ([]byte, error) {
+	store.mutex.RLock()
+	bytes, err := json.Marshal(store.storeMap)
+	store.mutex.RUnlock()
+	return bytes, err
 }
 
 // NewKVStore creates a new KVStore
