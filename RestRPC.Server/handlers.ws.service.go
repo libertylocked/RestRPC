@@ -89,14 +89,7 @@ func processServiceMessage(msgObjMap map[string]*json.RawMessage, svcName string
 			log.Println("WS: Error unmarshalling cache object", err)
 			return
 		}
-		// Serialize the value and put it in the cache store
-		valMar, err := json.Marshal(cacheObject.Value)
-		if err != nil {
-			log.Println("WS: Error marshaling value in cache object", cacheObject, err)
-			return
-		}
-		valMarStr := string(valMar)
-		serviceCache.SetCache(svcName, cacheObject.Key, valMarStr)
+		serviceCache.SetCache(svcName, cacheObject.Key, cacheObject.Value)
 
 	case HeaderResponse:
 		// A response object

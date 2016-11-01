@@ -2,7 +2,6 @@ package main
 
 import (
 	"encoding/json"
-	"io"
 	"io/ioutil"
 	"log"
 	"net/http"
@@ -31,8 +30,9 @@ func handleCacheGet(w http.ResponseWriter, r *http.Request) {
 	key := r.URL.Query().Get("key")
 	if svc != "" && key != "" {
 		value := serviceCache.GetCache(svc, key)
-		if value != nil {
-			io.WriteString(w, value.(string))
+		err := json.NewEncoder(w).Encode(value)
+		if err != nil {
+			log.Println("Error marshalling value", value)
 		}
 		return
 	}
