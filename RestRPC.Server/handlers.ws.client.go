@@ -68,7 +68,7 @@ func handleClientWS(w http.ResponseWriter, r *http.Request) {
 		reqChLock.RUnlock()
 		select {
 		case reqChannel <- &reqObject:
-			log.Println("WSC: Sent:", reqObject)
+			log.Println("CWS: Sent:", reqObject)
 		default:
 			// Fails to send the input because component's chan is full, or its channel does not exist
 			log.Println("CWS: Input channel unavailable. Discarding:", reqObject)
