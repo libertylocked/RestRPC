@@ -1,4 +1,7 @@
-﻿namespace RestRPC.Framework.Plugins
+﻿using System;
+using System.Threading.Tasks;
+
+namespace RestRPC.Framework.Plugins
 {
     /// <summary>
     /// A plugin extends the request types RestRPC can handle
@@ -9,6 +12,17 @@
         {
             get;
             set;
+        }
+
+        /// <summary>
+        /// Schedule a task to be run on the Update thread. 
+        /// This ensures the action will be run when component updates
+        /// </summary>
+        /// <param name="action"></param>
+        /// <returns></returns>
+        protected Task RunOnUpdateThread(Action action)
+        {
+            return PluginManager.RunOnUpdateThread(action);
         }
 
         /// <summary>

@@ -1,11 +1,12 @@
 ﻿using Newtonsoft.Json;
-using System;
-using System.Collections.Concurrent;
-using System.IO;
 using RestRPC.Framework.Messages.Inputs;
 using RestRPC.Framework.Messages.Outputs;
 using RestRPC.Framework.Plugins;
 using RestRPC.Framework.Serialization;
+using System;
+using System.Collections.Concurrent;
+using System.IO;
+using System.Threading.Tasks;
 using WebSocketSharp;
 using WebSocketSharp.Net;
 
@@ -23,6 +24,7 @@ namespace RestRPC.Framework
 
         ConcurrentQueue<InMessage> inQueue = new ConcurrentQueue<InMessage>();
         ConcurrentQueue<OutMessage> outQueue = new ConcurrentQueue<OutMessage>();
+        ConcurrentQueue<Task> taskQueue = new ConcurrentQueue<Task>();
 
         InMessageSerializer inMessageSerializer = new InMessageSerializer();
         JsonSerializerSettings outSerializerSettings = new JsonSerializerSettings
@@ -174,6 +176,21 @@ namespace RestRPC.Framework
 
             // Send messages over websocket
             NetworkUpdate();
+
+            // Start all queued tasks
+            RunQueuedTasks();
+        }
+
+        /// <summary>
+        /// Schedules a task to be run during Update
+        /// </summary>
+        /// <param name="action"></param>
+        /// <returns></returns>
+        public Task RunOnUpdateThread(Action action)
+        {
+            var task = new Task(action);
+            taskQueue.Enqueue(task);
+            return task;
         }
 
         internal void EnqueueOutMessage(OutMessage outMessage)
@@ -222,6 +239,15 @@ namespace RestRPC.Framework
                 {
                     Logger.Log(ex.ToString(), LogType.Error);
                 }
+            }
+        }
+
+        private void RunQueuedTasks()
+        {
+            Task task;
+            while (taskQueue.TryDequeue(out task))
+            {
+                task.RunSynchronously();
             }
         }
 

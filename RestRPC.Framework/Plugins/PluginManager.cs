@@ -4,6 +4,7 @@ using RestRPC.Framework.Messages.Outputs;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading.Tasks;
 
 namespace RestRPC.Framework.Plugins
 {
@@ -96,6 +97,11 @@ namespace RestRPC.Framework.Plugins
             {
                 RrpcComponent.EnqueueOutMessage(cacheUpdateMsg);
             }
+        }
+
+        internal Task RunOnUpdateThread(Action action)
+        {
+            return RrpcComponent.RunOnUpdateThread(action);
         }
 
         /// <summary>
