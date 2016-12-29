@@ -9,7 +9,7 @@ namespace RestRPC.Service.Plugins
         {
             if (args.Length < 1) return false;
 
-            SetCache("LastArgument", args[0]);
+            SetCache("LastArguments", args);
             SetCache("LastCalled", DateTime.Now);
             return true;
         }
